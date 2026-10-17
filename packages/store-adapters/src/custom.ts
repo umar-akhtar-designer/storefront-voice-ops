@@ -77,32 +77,36 @@ export function mapStatus(status: string): OrderStatus {
 }
 
 export function mapCustomOrder(node: CustomOrderNode, carrier?: string): Order {
+  // Payments can be pending (total null) and items may lack prices; never crash on real data.
+  const items = (node.items ?? []).map((item) => ({
+    sku: String(item.sku ?? ""),
+    name: String(item.name ?? ""),
+    qty: Number(item.quantity ?? 1),
+    unitPrice: Number(item.unitPrice?.amount ?? 0),
+  }));
+  const itemSum = items.reduce((sum, item) => sum + item.unitPrice * item.qty, 0);
+  const totalAmount = Number(node.total?.amount ?? itemSum ?? 0);
   return {
     id: node.id,
     customerId:
       (node.customerEmail ?? "").trim() || (node.customerPhone ?? "").trim() || node.customerName,
     customerName: node.customerName || "(no name)",
     status: mapStatus(node.status),
-    total: money(node.total.amount, node.total.currency),
+    total: money(Number.isFinite(totalAmount) ? totalAmount : 0, node.total?.currency || "PKR"),
     createdAt: node.createdAt,
     trackingNumber: node.trackingNumber ?? undefined,
     cancelledReason: node.cancelledReason ?? undefined,
     ...(carrier ? { carrier } : {}),
-    items: node.items.map((item) => ({
-      sku: item.sku,
-      name: item.name,
-      qty: item.quantity,
-      unitPrice: item.unitPrice.amount,
-    })),
+    items,
   };
 }
 
 export function mapCustomProduct(node: CustomProductNode): Product {
   return {
-    sku: node.sku,
-    name: node.name,
-    stock: Math.round(node.stock),
-    price: money(node.price.amount, node.price.currency),
+    sku: String(node.sku ?? ""),
+    name: String(node.name ?? "(unnamed product)"),
+    stock: Math.round(Number(node.stock ?? 0)),
+    price: money(Number(node.price?.amount ?? 0), node.price?.currency || "PKR"),
     reorderPoint: DEFAULT_REORDER_POINT,
   };
 }
