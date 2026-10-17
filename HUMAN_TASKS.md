@@ -6,7 +6,7 @@ against the mock provider. Check items off as they are done.
 
 ## Accounts and access
 
-- [ ] **Create the public GitHub repo** and push `main`. The first commit already exists locally.
+- [x] ~~Create the public GitHub repo~~ — done 2026-10-17: **https://github.com/umar-akhtar-designer/storefront-voice-ops** (public, main pushed, `.env` ignored).
       Until this is done the "Open Source" mini-challenge and the public judge link have no URL.
       _(Owner: Lead)_
 - [ ] **AWS account + billing alarm**, then **enable Bedrock model access** for the chosen models
@@ -15,7 +15,15 @@ against the mock provider. Check items off as they are done.
 - [ ] **Shopify development store** with at least 15 products and 20 orders, plus a custom-app Admin
       API access token (scopes: `read_orders`, `write_orders`, `read_products`, `write_products`,
       `read_customers`). Needed for Stage 4. _(Owner: Backend)_
-- [ ] **WooCommerce test site** with REST API keys (read/write). Needed for Stage 4. _(Owner: Backend)_
+- [ ] **WooCommerce test site** with REST API keys (read/write). Connector is code-complete
+      (contract-tested); it will need the `ck_/cs_` keys from any WordPress admin to go live.
+      The connection hand-out is `docs/store-connection-guide.md`.
+- [ ] **Rotate secrets shared in chat** (good hygiene, not blocking): the kapraa.pk MySQL
+      password and the Shopify tokens were discussed with the store owner. After the demo
+      window: rotate the Hostinger DB password (update `config.php` + `voice-ops-api.php`),
+      re-mint the Shopify client-credentials token (24h expiry anyway), and update the local
+      `.env`. The custom API key (`voiceops_a7f3…`) can be rotated by editing one line in the
+      uploaded `voice-ops-api.php`.
 - [ ] **Alexa developer account** login for the `alexa-ai` console, to test the MCP add-on and record
       the demo. Needed for Stage 6 + Stage 8. _(Owner: Lead)_
 
