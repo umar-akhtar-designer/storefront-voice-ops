@@ -307,6 +307,23 @@ export class MockAdapter implements StoreAdapter {
     return this.clone(order);
   }
 
+  async cancelOrder(id: string, reason: string): Promise<Order> {
+    if (!reason || reason.trim().length === 0) {
+      throw new ValidationError("A reason is required to cancel an order");
+    }
+    const order = this.orderMap.get(id);
+    if (!order) throw new NotFoundError(`Order ${id} was not found`);
+    if (order.status === "cancelled") {
+      return this.clone(order);
+    }
+    if (order.status !== "pending") {
+      throw new ValidationError(`Order ${id} is already ${order.status} and cannot be cancelled`);
+    }
+    order.status = "cancelled";
+    order.cancelledReason = reason;
+    return this.clone(order);
+  }
+
   async getProducts(filter: ProductFilter = {}): Promise<Product[]> {
     let list = [...this.productMap.values()];
     if (filter.sku) {

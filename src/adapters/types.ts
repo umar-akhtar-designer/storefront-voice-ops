@@ -27,6 +27,7 @@ export interface Order {
   createdAt: string;
   carrier?: string;
   trackingNumber?: string;
+  cancelledReason?: string;
   items: OrderItem[];
 }
 
@@ -97,6 +98,7 @@ export interface StoreAdapter {
   getOrders(filter?: OrderFilter): Promise<Page<Order>>;
   getOrder(id: string): Promise<Order>;
   fulfillOrder(id: string, input: FulfillOrderInput): Promise<Order>;
+  cancelOrder(id: string, reason: string): Promise<Order>;
   getProducts(filter?: ProductFilter): Promise<Product[]>;
   adjustStock(sku: string, delta: number, reason: string): Promise<Product>;
   getSalesBetween(from: Date, to: Date): Promise<SalesSummary>;

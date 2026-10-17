@@ -8,30 +8,37 @@
 - Store data (product names, customer notes) and model output are **untrusted** and must never be
   treated as instructions.
 
-## Implemented (Stage 1)
+## Implemented (Stage 2)
 
 - All environment configuration is validated with Zod at startup (`src/config.ts`).
 - Structured logs via pino with redaction of `authorization`, cookies, tokens, secrets, emails,
   phones, and tracking numbers (`src/logger.ts`).
 - Request body size limit (`REQUEST_BODY_LIMIT`).
 - Typed store errors so upstream failures are handled explicitly.
+- **Auth, two modes** (`AUTH_MODE`, `src/safety/auth.ts`):
+  - `demo`: read tools open; an optional demo bearer token (`MCP_AUTH_TOKEN`) can gate `/mcp`.
+  - `linked`: a bearer access token is required; missing/invalid tokens get `401` with
+    `WWW-Authenticate: Bearer resource="<MCP_CANONICAL_URI>"` so Alexa+ triggers account linking.
+    The token validator is pluggable; a full OAuth 2.1 (PKCE S256) authorization server is
+    scheduled for the deployment stage.
+- **Origin validation** on `/mcp` and `/api/chat` (DNS-rebinding protection); same-origin is always
+  allowed; a `*` entry disables the check for the public demo.
+- **Rate limiting** per token and per IP (`src/safety/rateLimit.ts`), with `X-RateLimit-*` headers
+  and `Retry-After` on `429`.
+- **Confirmation state machine** (`src/safety/confirm.ts`): one pending action per session/target,
+  TTL `CONFIRM_TTL_SECONDS`, per-session isolation, spoken codes for destructive/large actions,
+  idempotent confirmation (ADR-0003).
+- **Audit log**: every write transition recorded with actor, session, tool, input, and result
+  (`src/safety/audit.ts`, `audit_log` table).
+- **Fail-closed sessions**: non-initialize requests without a session id return `400`; unknown
+  session ids return `404`; unsupported methods return `405`.
 
-## Planned (Stage 2+)
+## Planned (Stage 3+)
 
-- **Auth, two modes** (`AUTH_MODE`):
-  - `demo`: public judge link; read tools open; write tools run only against the disposable demo
-    dataset. Optional demo bearer token on `/mcp`.
-  - `linked`: OAuth 2.1 with PKCE (S256). Validate the access token, check the `resource`/audience
-    equals `MCP_CANONICAL_URI`, and map the token to one merchant's store credentials. Return
-    `401` with a proper `WWW-Authenticate` header so Alexa+ triggers account linking.
-    Decision recorded in `docs/adr/`.
-- **Origin validation** on `/mcp` (DNS-rebinding protection); bind to localhost in development.
-- **Rate limiting** per token and per IP.
-- **Confirmation state machine**: write tools create a pending action (TTL `CONFIRM_TTL_SECONDS`);
-  `confirm_action` executes it; cancel and expiry are audited; expired actions never run.
-- **Audit log**: every write transition recorded with actor, tool, input, and result.
 - **Prompt-injection defense**: store data is data; write tools stay confirmation-gated even if a
   model is manipulated (see `src/ai/guardrails.ts` in Stage 3).
+- **Bedrock Guardrails** wiring for the briefing/draft prompts.
+- Real OAuth 2.1 authorization server and per-merchant credential mapping for `linked` mode.
 
 ## Secrets
 

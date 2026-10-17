@@ -99,3 +99,43 @@ Up to a 10% judging bonus is available for genuine entries.
   the latest Node 22.x, which satisfies `>=22.19.0`.
 - **Suggestion:** Document the exact minimum Node patch version for the Inspector in its README so
   teams do not discover it via an `EBADENGINE` warning.
+
+---
+
+## FL-007 — Stateless MCP cannot carry a confirmation across two calls
+
+- **Task:** Implement a confirmation gate ("ship order 1042" → owner says "yes") on MCP Streamable
+  HTTP.
+- **Steps:** Built the write tools to create a pending action on the first call and execute it on
+  `confirm_action`. In the scaffold's **stateless** transport (`sessionIdGenerator: undefined`) every
+  request built a brand-new `McpServer`, so the "yes" arrived with no session identity.
+- **Expected vs actual:** Expected the SDK to offer a session id even in stateless mode, or a
+  documented way to correlate two requests. Actual: stateless mode issues no `Mcp-Session-Id`, and
+  there is no `session_id` on the request params to key on, so the confirmation raised in call 1 was
+  invisible in call 2.
+- **Severity:** blocker (for the core feature)
+- **Workaround:** Switched `/mcp` to **stateful** Streamable HTTP (`sessionIdGenerator: () =>
+randomUUID()`), one server+transport per session, and keyed pending actions by the session id.
+  Recorded in ADR-0005 (supersedes ADR-0001). Also handled `GET`/`DELETE /mcp` and made
+  non-initialize requests without a session id return `400`.
+- **Suggestion:** The transport docs would help by spelling out the exact session-continuity
+  contract (header name, when it is issued, and what a server should do for a missing/unknown id);
+  the current guidance is spread across the spec and example servers.
+
+---
+
+## FL-008 — Bedrock Converse SDK types reject the MCP JSON Schema without a cast
+
+- **Task:** Feed `tools/list` output straight into Bedrock Converse `toolConfig` for the agent loop.
+- **Steps:** Mapped each MCP tool to `{ toolSpec: { name, description, inputSchema: { json:
+t.inputSchema } } }`. `t.inputSchema` is a `Record<string, unknown>` JSON Schema from the MCP SDK.
+- **Expected vs actual:** Expected it to assign to `ToolConfiguration`. Actual: `tsc` errored — the
+  AWS SDK models these unions with a `$UnknownMember` variant and expects `ToolInputSchema.json` to
+  be a specific `JsonValue`-like type, so a plain `Record<string, unknown>` matches no member and the
+  assignment fails with "Property '$unknown' is missing".
+- **Severity:** medium
+- **Workaround:** Cast the schema at the boundary (`json: t.inputSchema as any`) and keep the rest of
+  the loop typed; AWS SDK inputs are validated at runtime anyway. Also corrected the tool-result role:
+  Converse expects tool results as a `user` message containing `toolResult` blocks, not a `tool` role.
+- **Suggestion:** Export a public helper that converts a JSON Schema object into `ToolInputSchema`, or
+  loosen `json` to `unknown` at the SDK boundary, to avoid every caller reaching for a cast.

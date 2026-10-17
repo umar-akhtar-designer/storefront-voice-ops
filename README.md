@@ -36,14 +36,14 @@ npm run dev      # http://localhost:3000  MCP endpoint: /mcp
 - Proof that the track technology is really used in code:
   - MCP server entry point: `src/server.ts`
   - Tool registration: `src/mcp/` (tools/resources/prompts)
-  - Bedrock integration: `src/ai/bedrock.ts`
+  - Bedrock integration: `src/bedrock.ts` (wrapped by `src/ai/` in Stage 3)
   - Reusable adapter package: `packages/store-adapters/`
 
 ## Architecture
 
 ```
 Alexa+ (or the built-in simulator)
-      |  MCP over Streamable HTTP — POST /mcp
+      |  MCP over Streamable HTTP — POST /mcp  (stateful sessions)
       v
 Storefront Voice Ops MCP server (Node + TypeScript)
   - tools / resources / prompts (Zod-validated)
@@ -59,14 +59,18 @@ Storefront Voice Ops MCP server (Node + TypeScript)
 
 ## Tools
 
-The tool catalog is documented in [docs/tool-reference.md](docs/tool-reference.md).
+18 tools, 3 resources, and 3 prompts are documented in
+[docs/tool-reference.md](docs/tool-reference.md).
 
 ## Safety design
 
 - Read tools answer instantly.
-- Write tools are **confirmation-gated**: the first call returns a pending action; a second call
-  executes it, and the action expires after `CONFIRM_TTL_SECONDS`.
-- Every write is recorded in the audit log.
+- Write tools are **confirmation-gated**: the first call returns a pending action; only
+  `confirm_action` executes it, and the action expires after `CONFIRM_TTL_SECONDS`.
+- Destructive or large-impact actions (`cancel_order`, a stock change of 50+ units) also require a
+  **spoken code**, so a misheard "yes" alone cannot fire them.
+- Confirmations are keyed per MCP session, so a "yes" in one session never runs another's action.
+- Every write is recorded in the audit log (who, what, and the outcome).
 - All inputs are validated with Zod; model output and tool arguments are treated as untrusted.
 - Store data (product names, notes) is data, never instructions.
 

@@ -108,6 +108,25 @@ export function defineAdapterContract(name: string, factory: AdapterFactory): vo
       ).rejects.toBeInstanceOf(NotFoundError);
     });
 
+    it("cancels a pending order, is idempotent, and validates input", async () => {
+      const adapter = await make();
+      const pending = await adapter.getOrders({ status: "pending", limit: 5 });
+      const target = pending.items[0];
+      if (!target) return;
+
+      const cancelled = await adapter.cancelOrder(target.id, "contract test");
+      expect(cancelled.status).toBe("cancelled");
+      expect(cancelled.cancelledReason).toBe("contract test");
+
+      const again = await adapter.cancelOrder(target.id, "contract test");
+      expect(again.status).toBe("cancelled");
+
+      await expect(adapter.cancelOrder(target.id, "")).rejects.toBeInstanceOf(ValidationError);
+      await expect(adapter.cancelOrder("__missing-order__", "test")).rejects.toBeInstanceOf(
+        NotFoundError,
+      );
+    });
+
     it("adjusts stock and validates the adjustment", async () => {
       const adapter = await make();
       const products = await adapter.getProducts();

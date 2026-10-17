@@ -55,7 +55,9 @@ CREATE TABLE IF NOT EXISTS pending_actions (
   expires_at TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('pending', 'confirmed', 'cancelled', 'expired')),
   session_id TEXT,
-  actor TEXT
+  actor TEXT,
+  code TEXT,
+  requires_code INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE INDEX IF NOT EXISTS idx_pending_actions_session ON pending_actions (session_id, status);

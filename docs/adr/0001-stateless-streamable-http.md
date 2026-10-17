@@ -1,6 +1,6 @@
 # ADR 0001 — Stateless Streamable HTTP for the MCP endpoint
 
-- Status: Accepted (revisit after a real Alexa+ add-on test)
+- Status: Superseded by [ADR-0005](0005-stateful-sessions.md)
 - Date: 2026-10-17
 
 ## Context
@@ -21,3 +21,9 @@ self-contained.
   by an explicit `session_id` supplied by the caller (or derived from the auth subject).
 - We must confirm with the MCP Inspector and, if possible, a real Alexa+ add-on that stateless mode
   works. If Alexa+ requires session continuity, switch to session mode and record a new ADR.
+
+## Superseded
+
+The confirmation gate (ADR-0003) needs a stable session between the request that raises an action
+and the "yes" that confirms it, so the endpoint was moved to stateful Streamable HTTP in Stage 2.
+See [ADR-0005](0005-stateful-sessions.md).

@@ -1,38 +1,81 @@
 # Tool reference
 
-The tool catalog is built in stages. This page lists what exists today and what is planned.
+Every tool returns a short, speakable `text` result (voice rules: at most three spoken sentences,
+rounded numbers, ids spelled digit by digit) plus a `structuredContent` payload for machines. Every
+tool declares annotations (`readOnlyHint`, `idempotentHint`, `destructiveHint`, `openWorldHint`).
 
-## Implemented (Stage 0 scaffold — 7 tools on mock data)
+Tools run against the **StoreAdapter** interface, never a specific store, so the same catalog works
+on the mock provider, Shopify, and WooCommerce.
 
-These run against the scaffold's mock data in `src/data.ts` and will be rewired onto the
-StoreAdapter interface in Stage 2.
+## Read tools (safe, never change data)
 
-| Tool                    | Input                                      | Description                                                         |
-| ----------------------- | ------------------------------------------ | ------------------------------------------------------------------- |
-| `get_sales_summary`     | `period: today \| week \| month`           | Order count and revenue for a period.                               |
-| `list_low_stock`        | `threshold?: number`                       | Products at or below a stock threshold.                             |
-| `list_orders`           | `status?: pending \| shipped \| delivered` | List orders, optionally by status.                                  |
-| `get_order`             | `orderId: number`                          | Details of one order.                                               |
-| `mark_order_shipped`    | `orderId: number, carrier?: string`        | Mark a pending order shipped. **Not yet confirmation-gated.**       |
-| `draft_restock_message` | `sku: string, quantity?: number`           | Draft a supplier restock message (never sent).                      |
-| `get_daily_briefing`    | —                                          | Spoken morning briefing (Bedrock-phrased with a template fallback). |
+| Tool                 | Input                                         | Returns                                                   |
+| -------------------- | --------------------------------------------- | --------------------------------------------------------- |
+| `get_daily_briefing` | —                                             | Today's sales, orders waiting to ship, low-stock risks.   |
+| `get_sales_summary`  | `period: today \| yesterday \| week \| month` | Order count, revenue, average order value.                |
+| `get_top_sellers`    | `period`, `limit?`                            | Best sellers by units for the period.                     |
+| `list_orders`        | `status?`, `limit?`                           | Orders, optionally filtered by status.                    |
+| `get_order`          | `orderId: string \| number`                   | One order: customer, items, total, status.                |
+| `list_low_stock`     | `threshold?` (10), `limit?` (5)               | Products at or below the threshold, worst first.          |
+| `forecast_restock`   | `sku?`, `threshold?`, `windowDays?`, `limit?` | Restock plan with suggested quantities and days of stock. |
+| `lookup_customer`    | `query` (name, email, phone, id, or order id) | Customer with order count and lifetime value.             |
+| `get_weekly_report`  | `period: today \| week \| month`              | Seven-day style summary of sales, top sellers and risks.  |
+| `get_audit_log`      | `limit?` (10)                                 | Recent audited actions and their outcomes.                |
 
-## Planned (Stage 2 — full catalog on the StoreAdapter)
+## Draft tools (never send, only compose)
 
-Read: `get_daily_briefing`, `get_sales_summary`, `get_top_sellers`, `list_orders`, `get_order`,
-`list_low_stock`, `forecast_restock`, `lookup_customer`, `get_weekly_report`, `get_audit_log`.
+| Tool                     | Input                                  | Returns                                    |
+| ------------------------ | -------------------------------------- | ------------------------------------------ |
+| `draft_restock_message`  | `sku`, `quantity?`                     | Supplier restock message (flagged unsent). |
+| `draft_customer_message` | `orderId?` / `query?`, `kind`, `note?` | Customer message (flagged unsent).         |
 
-Draft (never send): `draft_restock_message`, `draft_customer_message`.
+`kind` is one of `shipping-update`, `delay`, `thanks`. Drafts are phrased with Bedrock when enabled
+and with a deterministic template otherwise.
 
-Write (confirmation-gated, audit-logged): `mark_order_shipped`, `adjust_inventory`,
-`cancel_order` (destructive; needs a stronger second confirmation).
+## Write tools (confirmation-gated, audited)
 
-Control: `confirm_action`, `cancel_action`, `list_pending_actions`.
+Write tools never change data on the first call. They create a **pending action**, speak a one-line
+confirmation prompt, and return `structuredContent.confirmationRequired = true` with an `actionId`.
+The action runs only when `confirm_action` is called for the same session.
 
-Resources: `store://summary`, `store://low-stock`, `store://pending-orders`.
+| Tool                 | Input                              | Guard                                                           |
+| -------------------- | ---------------------------------- | --------------------------------------------------------------- |
+| `mark_order_shipped` | `orderId`, `carrier?`, `tracking?` | Confirmation. Idempotent; refuses cancelled orders.             |
+| `adjust_inventory`   | `sku`, `delta`, `reason?`          | Confirmation; rejects negative stock. Large (`                  | delta | ≥ 50`) changes also need a spoken code. |
+| `cancel_order`       | `orderId`, `reason?`               | Confirmation **and** a spoken code. Refuses non-pending orders. |
 
-Prompts: `morning-briefing`, `weekly-review`, `restock-run`.
+Creating a new pending action for the same session + target supersedes the older one.
 
-Every production tool will have: an LLM-oriented description, a tight Zod input schema, a short
-speakable `text` result, `structuredContent` with an output schema, correct `isError` messages, and
-annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`).
+## Control tools
+
+| Tool                   | Input                | Purpose                                                               |
+| ---------------------- | -------------------- | --------------------------------------------------------------------- |
+| `confirm_action`       | `actionId?`, `code?` | Run the pending action. Idempotent: a second confirm does not re-run. |
+| `cancel_action`        | `actionId?`          | Discard the pending action so it never runs.                          |
+| `list_pending_actions` | —                    | Every action in this session still awaiting a yes/no.                 |
+
+`actionId` is optional on the control tools: omitting it targets the most recent pending action in
+the session, which is what a spoken "yes" maps to.
+
+## Resources
+
+| URI                      | Contents                                                    |
+| ------------------------ | ----------------------------------------------------------- |
+| `store://summary`        | Today's sales, order pipeline, low stock, awaiting confirm. |
+| `store://low-stock`      | Every product at or below its reorder point.                |
+| `store://pending-orders` | Orders still waiting to ship, oldest first.                 |
+
+## Prompts
+
+| Prompt             | Args        | Purpose                                              |
+| ------------------ | ----------- | ---------------------------------------------------- |
+| `morning-briefing` | `focus`     | Run the briefing and answer as a spoken update.      |
+| `weekly-review`    | `days`      | Summarise a period of trading.                       |
+| `restock-run`      | `threshold` | Find restock candidates and draft supplier messages. |
+
+## Safety guarantees
+
+- Confirmation is required for every write, keyed per session (ADR-0005).
+- High-impact actions additionally require a spoken code (ADR-0003).
+- Every confirmation and execution is written to the audit log with actor and outcome.
+- Read tools and draft tools never mutate store data.

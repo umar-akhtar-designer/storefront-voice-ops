@@ -10,40 +10,68 @@ Living project status for **Storefront Voice Ops**. Updated at the end of every 
 
 ## Done
 
+### Stage 1 — foundation
+
 - Repo skeleton: MIT LICENSE, `.gitignore`, `.env.example`, README, CONTRIBUTING, SECURITY, CODE_OF_CONDUCT.
 - Tooling: TypeScript (strict, ESM), ESLint flat config, Prettier, Vitest, tsx.
 - CI: `.github/workflows/ci.yml` (typecheck, lint, format check, test, build, gitleaks, npm audit).
 - Container: multi-stage `Dockerfile` (non-root, healthcheck) and `docker-compose.yml`.
-- Config: `src/config.ts` (Zod-validated environment).
-- Logger: `src/logger.ts` (pino, PII redaction).
-- Health endpoints: `/healthz` (liveness) and `/readyz` (store + DB reachability).
+- Config (`src/config.ts`, Zod), logger (`src/logger.ts`, pino + PII redaction), health endpoints
+  `/healthz` and `/readyz`.
 - Persistence: `src/db/schema.sql` + `src/db/index.ts` (better-sqlite3).
-- Adapters: `src/adapters/` StoreAdapter interface, typed errors, MockAdapter with a configurable clock, and a shared contract test suite.
-- MCP Inspector installed (`@modelcontextprotocol/inspector@2.11.0`) with an `npm run inspect` script.
-- Docs: `docs/alexa-plus-notes.md`, `docs/architecture.md`, `docs/security.md`, `docs/tool-reference.md`, `docs/aws-usage.md`, `docs/friction-log.md`, and ADRs 0001/0002/0004.
-- Verified: `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm test` (27 tests), `npm run build`, and `npm audit` (0 vulnerabilities) all pass; `npm run dev` + `npm run test:smoke` work end to end.
+- Adapters: `StoreAdapter` interface, typed errors, `MockAdapter`, shared contract test suite.
+- Docs: `docs/alexa-plus-notes.md`, `architecture.md`, `security.md`, `tool-reference.md`,
+  `aws-usage.md`, `friction-log.md`, ADRs 0001/0002/0004.
+
+### Stage 2 — safety layer + full tool catalog
+
+- **Safety** (`src/safety/`): origin/DNS-rebinding guard, in-memory rate limiter (per token/IP),
+  auth (`demo`/`linked`, `WWW-Authenticate` challenge, `safeEqual`), confirmation state machine with
+  TTL + spoken codes + per-session isolation, and an audit logger.
+- **Persistence**: `PendingActionRepository` and `AuditRepository` (`src/db/repositories.ts`);
+  `pending_actions` gained a `code` column.
+- **Full catalog** (`src/mcp/`): 18 tools (10 read, 2 draft, 3 write, 3 control), 3 resources
+  (`store://summary`, `store://low-stock`, `store://pending-orders`), 3 prompts
+  (`morning-briefing`, `weekly-review`, `restock-run`).
+- **Stateful sessions** for confirmation continuity (ADR-0005); `/mcp` now issues `mcp-session-id`,
+  returns `400` without it and `404` for unknown sessions.
+- `src/voice.ts`: speech formatting (money, ids, lists, sentence limit).
+- `src/mcp/writeExecutors.ts`: single execution path for confirmed writes.
+- Adapter contract extended with `cancelOrder`; `MockAdapter` implements it.
+- Deleted the scaffold's `src/tools.ts` / `src/data.ts` (superseded); build now cleans `dist` first.
+- Docs updated: `tool-reference.md`, `architecture.md`, `security.md`, ADR-0003, ADR-0005.
+- **Verified**: `typecheck`, `lint` (0 errors), `format:check`, `test` (83 tests across 10 files),
+  `build`, and a full `npm run dev` + `npm run test:smoke` flow (briefing → list pending → ship →
+  confirm → inspect) all pass.
 
 ## In progress
 
-- Stage 2 next: safety layer (auth, origin, rate limit, audit, confirmation) and the full tool catalog.
+- Stage 6 (deploy with the mock provider): Docker hardening, infra code, deploy workflow, demo mode,
+  public demo reset. Then Stage 3 (Bedrock), Stage 5 (simulator UI + Playwright), Stage 4 (adapters),
+  Stage 7 (docs/open-source), Stage 8 (submission).
 
 ## Blocked / waiting on a human
 
 - Public GitHub repo creation and first push (Lead).
 - AWS account, billing alarm, Bedrock model access (AWS owner).
 - Shopify development store + custom-app token (Backend).
+- WooCommerce test-site keys (Backend).
 - Alexa developer account login for `alexa-ai` (Lead).
-- Devpost draft form field inventory (Lead).
+- Devpost draft form field inventory; video recording and final submit (Lead).
 
 ## Questions for the lead
 
-- Do hackathon participants get real Alexa+ access to test an MCP add-on? (Ask in Discord; record in `docs/alexa-plus-notes.md`.)
+- Do hackathon participants get real Alexa+ access to test an MCP add-on? (Ask in Discord; record in
+  `docs/alexa-plus-notes.md`.)
 - Does the Resources page add requirement details for the Alexa+ track?
 
 ## Decisions log
 
 See `docs/adr/`. Notable decisions so far:
 
-- TypeScript pinned to 6.0.3 (latest stable supported by typescript-eslint 8.71.2). See `docs/adr/0004-typescript-version.md`.
-- MCP server uses the SDK stateless Streamable HTTP pattern for now; revisit session mode once a real Alexa+ add-on can be tested.
-- Adapter code currently lives in `src/adapters/`; the standalone publishable `packages/store-adapters` split is scheduled for the open-source phase (Stage 7).
+- TypeScript pinned to 6.0.3 (latest stable supported by typescript-eslint 8.71.2) — ADR-0004.
+- Confirmation gate with tiered spoken codes for destructive/large actions — ADR-0003.
+- Stateful MCP sessions keyed by `mcp-session-id`, confirmation persisted in SQLite — ADR-0005
+  (supersedes the stateless note in ADR-0001).
+- Adapter code lives in `src/adapters/`; the publishable `packages/store-adapters` split is scheduled
+  for the open-source phase (Stage 7).

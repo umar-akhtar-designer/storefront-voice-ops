@@ -5,42 +5,61 @@ an assistant (Alexa+, or the built-in simulator) can run the shop by voice.
 
 ```
 Alexa+ (or the built-in simulator)
-      |  MCP over Streamable HTTP — POST /mcp
+      |  MCP over Streamable HTTP — POST /mcp  (stateful sessions)
       v
 Express app (src/server.ts)
   - GET  /healthz        liveness
   - GET  /readyz         readiness (DB + store)
-  - POST /mcp            MCP endpoint (stateless Streamable HTTP)
+  - POST /mcp            MCP endpoint (stateful Streamable HTTP, one server per session)
+  - GET/DELETE /mcp      server-to-client stream / session termination
   - POST /api/chat       simulator agent (Bedrock Converse tool-use loop, offline fallback)
       |
+      |  safety middleware: origin check -> rate limit -> auth  (src/safety/)
       v
-MCP server (src/mcp/, registered in src/tools.ts today)
-  - tools / resources / prompts (Zod-validated)
-  - safety layer: auth, origin check, rate limit, confirmation, audit (src/safety/)
+MCP server (src/mcp/buildServer.ts, one instance per session)
+  - tools   (src/mcp/tools/*)     read / draft / write / control
+  - resources (src/mcp/resources.ts)
+  - prompts (src/mcp/prompts.ts)
+  - context  (src/mcp/context.ts)   adapter + confirm + audit + ai, per-session actor/sessionId
       |
       +--> StoreAdapter (src/adapters/)
       |      |-- MockAdapter        deterministic demo + tests
       |      |-- ShopifyAdapter     GraphQL Admin API   (Stage 4)
       |      |-- WooCommerceAdapter REST v3             (Stage 4)
       |
-      +--> Amazon Bedrock (Converse API)  briefings, drafting, agent loop
+      +--> AiService (src/ai/)      briefings, drafting, explanations
+      |      +--> Amazon Bedrock (Converse API)   when USE_BEDROCK=1
+      |      +--> offline templates               always available
       |
-      +--> SQLite (better-sqlite3)  pending actions + audit log
+      +--> SQLite (better-sqlite3)  pending_actions + audit_log
 ```
 
-## Current state (Stage 1)
+## Data flow for a write
+
+1. The model calls a write tool (for example `mark_order_shipped`).
+2. The tool validates a preflight condition, writes a **pending action** to SQLite, and returns a
+   spoken confirmation prompt with `confirmationRequired: true`.
+3. The owner says "yes". The assistant calls `confirm_action` **on the same session**.
+4. The safety layer validates the action (session match, not expired, code if required), then the
+   write executor performs the change through the `StoreAdapter`.
+5. The action is marked `confirmed` and both the confirmation and the execution are written to the
+   audit log. A second confirm is idempotent and does not re-run.
+
+## Current state (Stage 2)
 
 - Config (`src/config.ts`) validates the whole environment with Zod at startup.
 - Health endpoints and structured logging (pino) with PII redaction are in place.
 - The StoreAdapter interface and MockAdapter exist and pass a shared contract test suite.
-- The MCP endpoint uses the SDK's stateless Streamable HTTP pattern (see
-  [adr/0001](adr/0001-stateless-streamable-http.md)).
+- **Safety layer**: origin guard, in-memory rate limiter, auth (`demo`/`linked`), confirmation state
+  machine, and an audit logger (`src/safety/`).
+- **Full catalog**: 18 tools, 3 resources, and 3 prompts, all on the StoreAdapter
+  (`src/mcp/`, see `docs/tool-reference.md`).
+- **Stateful sessions** so confirmation survives across calls (ADR-0005).
+- `src/voice.ts` formats money, ids, and lists for speech.
 
 ## Planned (see `STATUS.md`)
 
-- Stage 2: safety layer and the full tool/resources/prompts catalog, one file per tool under
-  `src/mcp/`.
-- Stage 3: Bedrock intelligence layer with prompts, guardrails, and an evaluation set.
+- Stage 3: Bedrock intelligence layer (`AiService` on the Converse API, guardrails, eval set).
 - Stage 4: Shopify and WooCommerce adapters.
 - Stage 5: simulator UI.
 - Stage 6+: AWS deployment, docs, open-source package split.
