@@ -1,0 +1,101 @@
+# Friction log
+
+Real obstacles hit while building, logged **when they happened**, never invented. Format per entry:
+**Task · Steps · Expected vs actual · Severity (blocker/high/medium/low) · Workaround · Suggestion.**
+
+Up to a 10% judging bonus is available for genuine entries.
+
+---
+
+## FL-001 — Reading the team brief from a macOS `.textClipping`
+
+- **Task:** Read and follow the full team brief that was shared as `Pasted 17-10-2026 at 11.17.59.textClipping`.
+- **Steps:** Tried to open the file directly; the Read tool reported a binary file. Tried
+  `textutil -convert txt ... -stdout`, which printed a binary `bplist00` header followed by raw HTML.
+- **Expected vs actual:** Expected a plain text/markdown file. Actual: a macOS binary plist wrapping
+  an HTML ("public.html") payload.
+- **Severity:** low
+- **Workaround:** Extracted the embedded `<!DOCTYPE ...>` HTML with a small Python snippet, stripped
+  the tags, and unescaped entities to produce readable markdown.
+- **Suggestion:** Share briefs as plain `.md` or `.txt` to keep them diffable and tool-friendly.
+
+---
+
+## FL-002 — TypeScript 7 is the npm `latest`, but typescript-eslint does not support it yet
+
+- **Task:** Add a working ESLint setup (required by the brief: "ESLint, Prettier" and "lint in CI").
+- **Steps:** `npm view typescript version` → `7.0.2` (npm `latest`). `npm view typescript-eslint version`
+  → `8.71.2`; its `peerDependencies` are `typescript: ">=4.8.4 <6.1.0"`.
+- **Expected vs actual:** Expected the latest linter to support the latest TypeScript. Actual: the
+  newest stable `typescript-eslint` (and even its `canary` `8.71.3-alpha.10`) still declares TS `<6.1.0`,
+  so an install with TypeScript 7.0.2 raises a peer-dependency conflict (npm 11 fails on peer conflicts).
+- **Severity:** medium
+- **Workaround:** Pinned `typescript` to the latest supported stable, `6.0.3`, and documented the
+  choice in `docs/adr/0004-typescript-version.md`.
+- **Suggestion:** Either ship a `typescript-eslint` release that declares support for TypeScript 7,
+  or have npm surface a clearer "unsupported TypeScript major" message. A language-version support
+  matrix in the TypeScript release notes would also help.
+
+---
+
+## FL-003 — MCP SDK version must be pinned exact for spec `2025-11-25`
+
+- **Task:** Pin the MCP SDK to a version that lists protocol `2025-11-25`.
+- **Steps:** `npm view @modelcontextprotocol/sdk version` → `1.32.1`.
+- **Expected vs actual:** The scaffold used a caret range (`^1.32.1`). The brief requires an **exact**
+  pin (no caret) and a committed lockfile so the protocol version cannot drift.
+- **Severity:** low
+- **Workaround:** Changed the dependency to the exact `1.32.1` and will commit `package-lock.json`.
+- **Suggestion:** Document the supported protocol version per SDK release in the changelog so teams do
+  not have to inspect the package to find it.
+
+---
+
+## FL-004 — Vitest 5 fails to start: rolldown native binding missing (npm optional-dependencies bug)
+
+- **Task:** Run the test suite (`npm test`) with Vitest 5.
+- **Steps:** `npm install` completed cleanly (0 vulnerabilities), then `npm test` aborted at startup
+  with `Error: Cannot find native binding` / `Cannot find module '@rolldown/binding-wasm32-wasi'`.
+  `node_modules/@rolldown` contained only `pluginutils`, not the `binding-darwin-arm64` package.
+- **Expected vs actual:** Expected the platform-specific optional dependency to be installed on
+  macOS arm64. Actual: npm skipped it (the well-known optional-dependency resolution bug,
+  npm/cli#4828), so the bundler Vitest 5 depends on couldn't load its native binding.
+- **Severity:** high (blocks the whole test suite)
+- **Workaround:** `rm -rf node_modules package-lock.json && npm install`, which reinstalled the
+  optional `@rolldown/binding-darwin-arm64`. Tests then passed (27/27).
+- **Suggestion:** npm should reliably install platform optional dependencies, or Vitest should
+  detect the missing binding and print the exact remediation command. Pinning the binding as a
+  direct optional dependency of the tool would also help.
+
+---
+
+## FL-005 — TypeScript 7 / typescript-eslint (see FL-002) has a follow-on: build output layout
+
+- **Task:** Configure `tsc` to emit a runnable `dist/` for `npm start`.
+- **Steps:** Added `src/` and `test/` to `include` with `rootDir: "."`, so output lands in
+  `dist/src/...` and `dist/test/...`. The non-TypeScript asset `src/db/schema.sql` is not emitted by
+  `tsc`, so the compiled server could not read its schema.
+- **Expected vs actual:** Expected `tsc` to copy `.sql` assets. Actual: `tsc` only emits JS/d.ts.
+- **Severity:** low
+- **Workaround:** Added `scripts/copy-assets.mjs` and chained it in the `build` script to copy
+  `src/db/schema.sql` into `dist/src/db/schema.sql`.
+- **Suggestion:** A first-class "copy these non-TS assets to outDir" option in `tsconfig` would avoid
+  a bespoke build step.
+
+---
+
+## FL-006 — MCP Inspector requires Node ≥22.19, stricter than the "Node 22" baseline
+
+- **Task:** Install and run the MCP Inspector (required for Stage 1 and for verifying tools over
+  Streamable HTTP).
+- **Steps:** Added `@modelcontextprotocol/inspector@2.11.0` and ran `npm install`. npm printed
+  `EBADENGINE` for the transitive `undici@8.12.2` which requires `node >=22.19.0`; the local runtime
+  is `22.14.0`.
+- **Expected vs actual:** The brief specifies "Node 22" as the baseline. Actual: the Inspector's
+  dependency needs a newer 22.x patch level than the machine has. Runtime still worked (Inspector
+  printed its version), but the engine range is unsatisfied.
+- **Severity:** low
+- **Workaround:** Kept it as a dev-only dependency; the app itself runs on Node 22.14. On CI we use
+  the latest Node 22.x, which satisfies `>=22.19.0`.
+- **Suggestion:** Document the exact minimum Node patch version for the Inspector in its README so
+  teams do not discover it via an `EBADENGINE` warning.

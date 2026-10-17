@@ -1,0 +1,60 @@
+services:
+  app:
+    build: .
+    image: storefront-voice-ops:local
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOST: 0.0.0.0
+      AUTH_MODE: demo
+      STORE_PROVIDER: mock
+      DB_PATH: /app/data/storefront.sqlite
+      USE_BEDROCK: "0"
+    volumes:
+      - storefront-data:/app/data
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # Optional local WooCommerce test store for adapter development (Stage 4).
+  # Enable with: docker compose --profile woo up
+  woocommerce:
+    image: wordpress:6-php8.2-apache
+    profiles: ["woo"]
+    ports:
+      - "8080:80"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+    depends_on:
+      - db
+    volumes:
+      - woo-html:/var/www/html
+
+  db:
+    image: mariadb:11
+    profiles: ["woo"]
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_PASSWORD: wordpress
+      MARIADB_ROOT_PASSWORD: root
+    volumes:
+      - woo-db:/var/lib/mysql
+
+volumes:
+  storefront-data:
+  woo-html:
+  woo-db:

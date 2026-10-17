@@ -1,0 +1,62 @@
+{
+  "name": "storefront-voice-ops",
+  "version": "1.0.0",
+  "description": "Open-source MCP server that lets a small online store owner run their shop by voice through Alexa+.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx src/server.ts",
+    "dev:watch": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.build.json && node scripts/copy-assets.mjs",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:smoke": "tsx test/smoke.ts",
+    "inspect": "mcp-inspector"
+  },
+  "keywords": [
+    "mcp",
+    "alexa-plus",
+    "amazon-bedrock",
+    "shopify",
+    "woocommerce",
+    "voice"
+  ],
+  "author": "Umar Akhtar (WeblyPro)",
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "3.1152.0",
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "better-sqlite3": "13.0.3",
+    "dotenv": "18.0.8",
+    "express": "5.3.0",
+    "pino": "10.4.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@modelcontextprotocol/inspector": "2.11.0",
+    "@types/better-sqlite3": "9.6.0",
+    "@types/express": "5.0.6",
+    "@types/node": "26.6.5",
+    "@types/supertest": "7.2.1",
+    "@vitest/coverage-v8": "5.0.5",
+    "eslint": "10.13.0",
+    "pino-pretty": "13.2.0",
+    "prettier": "3.9.10",
+    "supertest": "7.3.1",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.2",
+    "vitest": "5.0.5"
+  }
+}
