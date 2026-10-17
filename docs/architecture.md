@@ -62,9 +62,11 @@ MCP server (src/mcp/buildServer.ts, one instance per session)
   (`npm run eval`).
 - **Deployment** (`deploy/`): Docker, ECS Fargate task definition, and a gated GitHub Actions
   deploy workflow; `DEMO_MODE` exposes a reset endpoint for the public (mock) demo.
+- **Simulator UI** (`public/`): a three-pane web app (conversation, store state, inspector) with Web
+  Speech input/output. It calls `POST /api/chat` and `GET /api/state`; Playwright covers it in
+  `test/e2e/`.
 
 ## Planned (see `STATUS.md`)
 
-- Stage 5: simulator UI.
 - Stage 4: Shopify and WooCommerce adapters.
 - Stage 7: open-source package split and docs polish.

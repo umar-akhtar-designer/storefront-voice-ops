@@ -73,11 +73,23 @@ Living project status for **Storefront Voice Ops**. Updated at the end of every 
 - Docs: `architecture.md`, `security.md`, `README.md` updated.
 - **Verified**: typecheck, lint, format, **104 tests** (14 files), `npm run eval` 8/8, build.
 
+### Stage 5 — simulator UI + end-to-end tests
+
+- Three-pane simulator in `public/` (`index.html`, `styles.css`, `app.js`): conversation, live store
+  state, and an inspector showing each tool call plus the audit log.
+- Web Speech input (microphone) and spoken replies, with a type-in fallback everywhere.
+- Served by Express at `/`; talks to `POST /api/chat` and the new read-only `GET /api/state`
+  snapshot; shows the demo reset button when `DEMO_MODE` is on.
+- **Playwright** e2e (`test/e2e/simulator.spec.ts`, `playwright.config.ts`): page load, low-stock
+  question (asserts reply + tool trace), and the full ship → confirm → audit flow. Playwright starts
+  the dev server itself.
+- CI: new `e2e` job (installs Chromium, runs `npm run test:e2e`, uploads the report).
+- **Verified**: typecheck, lint, format, **105 tests** (15 files), `npm run test:e2e` 3/3, build.
+
 ## In progress
 
 - Stage 6 is code-complete; the real deploy is blocked on an AWS account and a domain. Next:
-  Stage 5 (simulator UI + Playwright), Stage 4 (adapters), Stage 7 (docs/open-source), Stage 8
-  (submission).
+  Stage 4 (adapters), Stage 7 (docs/open-source), Stage 8 (submission).
 
 ## Blocked / waiting on a human
 

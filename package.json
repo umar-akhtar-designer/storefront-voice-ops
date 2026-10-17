@@ -24,6 +24,7 @@
     "test:coverage": "vitest run --coverage",
     "test:smoke": "tsx test/smoke.ts",
     "eval": "tsx eval/ai-eval.ts",
+    "test:e2e": "playwright test",
     "inspect": "mcp-inspector"
   },
   "keywords": [
@@ -47,6 +48,8 @@
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@modelcontextprotocol/inspector": "2.11.0",
+    "@playwright/test": "1.64.1",
+    "@playwright/test": "^1.64.1",
     "@types/better-sqlite3": "9.6.0",
     "@types/express": "5.0.6",
     "@types/node": "26.6.5",

@@ -139,3 +139,39 @@ t.inputSchema } } }`. `t.inputSchema` is a `Record<string, unknown>` JSON Schema
   Converse expects tool results as a `user` message containing `toolResult` blocks, not a `tool` role.
 - **Suggestion:** Export a public helper that converts a JSON Schema object into `ToolInputSchema`, or
   loosen `json` to `unknown` at the SDK boundary, to avoid every caller reaching for a cast.
+
+---
+
+## FL-009 — Playwright's headless browser is a second, separately-downloaded artifact
+
+- **Task:** Add real browser end-to-end tests for the simulator (`npm run test:e2e`).
+- **Steps:** Installed `@playwright/test` and ran `npx playwright install chromium`. The command ran
+  for several minutes and was interrupted by a timeout; `~/Library/Caches/ms-playwright` then had
+  `chromium-1248` but **not** `chromium_headless_shell-1248`. Running the tests failed with
+  "Executable doesn't exist at .../chromium_headless_shell-1248/...".
+- **Expected vs actual:** Expected `chromium` to be everything needed to run headless. Actual:
+  modern Playwright runs headless via a separate **Chrome Headless Shell** download, so a partially
+  finished `install chromium` leaves a half-working state with a clear-but-surprising error.
+- **Severity:** medium
+- **Workaround:** Re-ran `npx playwright install chromium` in the background and let it finish; the
+  headless-shell artifact (99 MiB) downloaded and all three tests then passed. CI uses
+  `npx playwright install --with-deps chromium`, which fetches both artifacts in one step.
+- **Suggestion:** Have `install chromium` print the two artifacts it will fetch up front, and make
+  the "executable doesn't exist" error say explicitly that the _headless shell_ sub-download was
+  missing (it does hint at `npx playwright install`, but not why a prior install was insufficient).
+
+---
+
+## FL-010 — Node 22.14 vs 22.19: a second tooling package with the same `>=22.19` floor (see FL-006)
+
+- **Task:** `npm install -D @playwright/test` on the Node 22.14.0 runtime.
+- **Steps:** Install completed, but npm printed `EBADENGINE` for the transitive `undici@8.12.2`
+  (`node >=22.19.0`), the same package that flagged the MCP Inspector in FL-006.
+- **Expected vs actual:** Expected "Node 22" to be a single supported baseline. Actual: multiple
+  common dev tools pull `undici` 8.x, which requires a newer 22.x patch, so the machine's 22.14
+  sits below several tools' real floor.
+- **Severity:** low
+- **Workaround:** None needed — it is a warning, and both tools run. CI uses `node-version: 22`
+  (latest 22.x), which satisfies the floor, so the warning does not appear there.
+- **Suggestion:** Align the brief's "Node 22" with a minimum patch (22.19+) and have npm group and
+  summarise repeated `EBADENGINE` warnings for the same package instead of printing one per parent.

@@ -3,38 +3,88 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Storefront Voice Ops — Simulator</title>
-    <style>
-      body {
-        margin: 0;
-        min-height: 100vh;
-        display: grid;
-        place-items: center;
-        font-family:
-          system-ui,
-          -apple-system,
-          "Segoe UI",
-          sans-serif;
-        background: #0f172a;
-        color: #e2e8f0;
-      }
-      main {
-        max-width: 40rem;
-        padding: 2rem;
-        text-align: center;
-      }
-      code {
-        background: #1e293b;
-        padding: 0.15rem 0.4rem;
-        border-radius: 0.35rem;
-      }
-    </style>
+    <title>Storefront Voice Ops — Alexa+ simulator</title>
+    <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <main>
-      <h1>Storefront Voice Ops</h1>
-      <p>The Alexa+ simulator UI is coming in Stage 5 of the build.</p>
-      <p>The MCP server is live at <code>POST /mcp</code>.</p>
+    <header class="topbar">
+      <div class="brand">
+        <span class="dot"></span>
+        <strong>Storefront Voice Ops</strong>
+        <span class="sub">Alexa+ simulator</span>
+      </div>
+      <div class="status">
+        <span id="provider" class="pill">provider: …</span>
+        <span id="engine" class="pill">engine: …</span>
+        <button id="reset" class="ghost" hidden>Reset demo</button>
+      </div>
+    </header>
+
+    <main class="grid">
+      <!-- Pane 1: conversation -->
+      <section class="pane chat" aria-label="Conversation">
+        <h2>Talk to your store</h2>
+        <div id="messages" class="messages" aria-live="polite"></div>
+        <form id="composer" class="composer">
+          <input
+            id="input"
+            type="text"
+            placeholder="e.g. How did we do today?"
+            autocomplete="off"
+            aria-label="Message"
+          />
+          <button type="button" id="mic" class="ghost" title="Talk (Web Speech)">🎤</button>
+          <button type="submit" id="send">Send</button>
+        </form>
+        <label class="toggle">
+          <input type="checkbox" id="speak" checked />
+          Speak replies aloud
+        </label>
+        <div class="examples">
+          <button data-say="How did my store do today?">Today</button>
+          <button data-say="What is running low?">Low stock</button>
+          <button data-say="Ship order 1008 with TCS">Ship 1008</button>
+          <button data-say="What is forecast to restock?">Restock plan</button>
+        </div>
+      </section>
+
+      <!-- Pane 2: store -->
+      <section class="pane store" aria-label="Store">
+        <h2>Store</h2>
+        <div class="block">
+          <h3>Low stock</h3>
+          <ul id="low-stock" class="list"></ul>
+        </div>
+        <div class="block">
+          <h3>Awaiting confirmation</h3>
+          <ul id="awaiting" class="list"></ul>
+        </div>
+        <div class="block">
+          <h3>Orders to ship</h3>
+          <p id="pending-total" class="muted">…</p>
+          <ul id="pending-orders" class="list"></ul>
+        </div>
+      </section>
+
+      <!-- Pane 3: trace + audit -->
+      <section class="pane inspector" aria-label="Inspector">
+        <h2>Inspector</h2>
+        <div class="block">
+          <h3>Tool calls (last turn)</h3>
+          <ol id="trace" class="trace"></ol>
+        </div>
+        <div class="block">
+          <h3>Audit log</h3>
+          <ul id="audit" class="list"></ul>
+        </div>
+      </section>
     </main>
+
+    <footer class="foot">
+      <span>MCP endpoint: <code>POST /mcp</code></span>
+      <span id="speech-support" class="muted"></span>
+    </footer>
+
+    <script src="/app.js"></script>
   </body>
 </html>

@@ -20,14 +20,17 @@ Ask things like:
 ## Try it in 60 seconds
 
 A public demo endpoint and simulator link will be published here once deployed (see
-[Hackathon](#hackathon)). Until then, run it locally:
+[Hackathon](#hackathon)). Until then, run it locally and open the **simulator**:
 
 ```bash
 git clone <repo-url> && cd storefront-voice-ops
 npm install
 cp .env.example .env
-npm run dev      # http://localhost:3000  MCP endpoint: /mcp
+npm run dev      # simulator: http://localhost:3000   MCP endpoint: /mcp
 ```
+
+The simulator is a three-pane web app: talk (typing or the microphone), watch the store state, and
+inspect every tool call. It reaches the MCP server over the real protocol.
 
 ## Hackathon
 
@@ -82,6 +85,7 @@ cp .env.example .env
 npm run dev          # start the server (http://localhost:3000)
 npm test             # unit + contract tests (Vitest)
 npm run test:smoke   # MCP client smoke test against a running server
+npm run test:e2e     # simulator end-to-end tests (Playwright)
 npm run eval         # AI eval set (offline; USE_BEDROCK=1 to run against the model)
 npm run typecheck    # TypeScript
 npm run lint         # ESLint

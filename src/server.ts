@@ -475,6 +475,53 @@ export function createApp(): express.Express {
       });
   });
 
+  // ---- Simulator state: read-only snapshot for the UI's store + inspector panes ----
+  app.get("/api/state", guardOrigin, limiter, async (_req, res) => {
+    try {
+      const current = getServices();
+      const db = getDb();
+      const [low, pending] = await Promise.all([
+        current.adapter.getProducts({ lowStockBelow: 10 }),
+        current.adapter.getOrders({ status: "pending", limit: 10 }),
+      ]);
+      res.json({
+        provider: current.adapter.provider,
+        currency: current.adapter.currency,
+        lowStock: low.map((p) => ({
+          sku: p.sku,
+          name: p.name,
+          stock: p.stock,
+          reorderPoint: p.reorderPoint,
+        })),
+        pendingOrders: {
+          total: pending.total,
+          items: pending.items.map((o) => ({
+            id: o.id,
+            customer: o.customerName,
+            total: o.total.amount,
+          })),
+        },
+        awaitingConfirmation: new PendingActionRepository(db).recentPending(10).map((a) => ({
+          id: a.id,
+          tool: a.tool,
+          summary: a.summary,
+          expiresAt: a.expiresAt,
+          requiresCode: a.requiresCode,
+        })),
+        audit: new AuditRepository(db).recent(8).map((e) => ({
+          tool: e.tool,
+          status: e.resultStatus,
+          actor: e.actor,
+          summary: e.resultSummary,
+          ts: e.ts,
+        })),
+      });
+    } catch (error) {
+      logger.error({ err: error }, "state failed");
+      res.status(500).json({ error: "State unavailable." });
+    }
+  });
+
   // ---- Public demo controls (only when DEMO_MODE is enabled) ----
   if (config.DEMO_MODE) {
     const resetDemo = async (): Promise<{

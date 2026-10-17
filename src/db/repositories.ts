@@ -122,6 +122,16 @@ export class PendingActionRepository {
     return rows.map(mapPending);
   }
 
+  /** Most recent still-pending actions across all sessions (for the simulator's "awaiting" pane). */
+  recentPending(limit = 10): PendingAction[] {
+    const rows = this.db
+      .prepare(
+        "SELECT * FROM pending_actions WHERE status = 'pending' ORDER BY created_at DESC, rowid DESC LIMIT ?",
+      )
+      .all(Math.min(Math.max(limit, 1), 100)) as PendingRow[];
+    return rows.map(mapPending);
+  }
+
   /** Cancel any other pending action for the same session/tool/target (one pending per target). */
   supersede(sessionId: string, tool: string, target: string | undefined, keepId: string): number {
     const result = this.db
