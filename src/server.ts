@@ -295,6 +295,9 @@ export function createApp(): express.Express {
     }
   }
 
+  const GREETING_RE =
+    /^(hi+|hello|hey|salam( aleikum| alikum)?|aoa|good (morning|afternoon|evening)|yo|help|what can (i|you) do)[.! ]*$/;
+
   function keywordPlan(q: string): { name: string; args: Record<string, unknown> } {
     const s = q.trim().toLowerCase();
     const id = s.match(/\b(1\d{3})\b/)?.[1];
@@ -436,6 +439,18 @@ export function createApp(): express.Express {
           }
           messages.push({ role: "user", content: results });
         }
+      }
+
+      const trimmed = message.trim().toLowerCase();
+      if (trimmed.length === 0 || GREETING_RE.test(trimmed)) {
+        return {
+          reply:
+            "Hello! You can ask about today's sales, what is running low in stock, or orders " +
+            "waiting to ship. You can also say things like ship order 1008 or cancel order 1004 — " +
+            "writes always ask for a spoken confirmation first.",
+          trace,
+          engine: "offline-router",
+        };
       }
 
       const plan = keywordPlan(message);
