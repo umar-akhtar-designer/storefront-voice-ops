@@ -121,9 +121,19 @@ Living project status for **Storefront Voice Ops**. Updated at the end of every 
   package's built output.
 - Docs: ADR-0002 updated (split done), README hackathon/architecture sections, architecture diagram.
 
+### Stage 8 — submission assets (no AWS/credentials required)
+
+- `docs/demo-script.md`: beat-by-beat recording script for the ~3 min demo, with offline fallbacks
+  for the Bedrock act and confirmation-code flow.
+- `docs/devpost-submission.md`: paste-ready Devpost copy — tagline, inspiration, what it does, how we
+  built it, challenges, accomplishments, learned, next, plus link placeholders.
+- `docs/aws-usage.md`: full per-service product feedback (Bedrock Converse, Guardrails, Fargate/EFS,
+  ECR, CloudWatch, IAM+OIDC) and a defence of scope for what we skipped.
+
 ## In progress
 
-- Stages 6, 5 and 4 are code-complete. Next: Stage 8 (submission).
+Nothing — every agent-runnable stage is done. Remaining work is in `HUMAN_TASKS.md` (accounts,
+deploy, video, Devpost submit).
 
 ## Blocked / waiting on a human
 

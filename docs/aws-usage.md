@@ -40,8 +40,71 @@ Deployment files are in [`deploy/`](../deploy/README.md):
 The actual deploy is blocked on an AWS account and model access; see
 [`HUMAN_TASKS.md`](../HUMAN_TASKS.md).
 
-## Product feedback (to be completed in Stage 8)
+## Product feedback (Stage 8)
 
-One section per service with: what we used it for, what worked, what needs work, onboarding
-experience, and whether we would build with it again. Being specific and honest scores higher than
-praise.
+For each service: what we used it for, what worked, what needs work, onboarding experience, and
+whether we would build with it again. Specific and honest beats praise.
+
+### Amazon Bedrock (Runtime, Converse)
+
+- **Used for**: rephrasing briefings and drafted customer replies with Nova Lite; optional
+  Guardrails; a configurable kill switch so cost can never exceed a demo budget.
+- **What worked**: the Converse API is the right shape for tool use — one call signature covers
+  messages, tool definitions, and tool results, so our agent loop stays short. Tool-choice control
+  ("auto") worked exactly as needed for briefing assembly.
+- **What needs work**: the TypeScript SDK's `ToolInputSchema` rejects a plain JSON Schema object, so
+  every MCP server has to cast at the SDK boundary; tool results must be sent as `user`-role
+  messages, which is unintuitive when every tutorial diagram shows a `tool` role
+  (see friction log FL-008). Both would save a real afternoon for MCP integrators.
+- **Onboarding**: enabling model access is still a multi-page flow for a first-time account. A
+  single "start of demo grant" toggle (one model, one region, a spend cap) would make hackathon-style
+  usage far easier.
+- **Would we build with it again**: yes — with the kill switch and offline fallback kept exactly as
+  we have them.
+
+### Bedrock Guardrails
+
+- **Used for**: a second layer behind our own injection filter when filtering drafted customer
+  messages.
+- **What worked**: the concept is right — per-application policy instead of per-model behaviour.
+- **What needs work**: region availability varies; wiring guardrail IDs into Converse calls differs
+  from the console's default flow. An "attach guardrail to the model access grant" step would remove
+  the extra plumbing.
+- **Would we build with it again**: yes, as defense in depth.
+
+### ECS Fargate + EFS
+
+- **Used for**: hosting the MCP server as one container task with the SQLite state volume on EFS.
+- **What worked**: the design fits — a stateful session + audit store needs a real volume, and
+  Fargate + EFS is the standard answer.
+- **What needs work**: the join between "one service" and "get a public https URL" involves ALB,
+  ACM, target groups, and security groups. A "Fargate + public domain" starter that just yields a
+  URL would help voice-assistant projects that need one canonical `https` address quickly.
+- **Would we build with it again**: yes.
+
+### Amazon ECR
+
+- **Used for**: storing the app image; the deploy workflow pushes `storefront-voice-ops:<sha>`.
+- **What worked**: push worked exactly as documented; lifecycle policies are easy to set.
+- **Would we build with it again**: yes.
+
+### CloudWatch Logs
+
+- **Used for**: structured JSONL request/audit logs from the container via the `awslogs` driver.
+- **What worked**: minimal setup in the task definition; querying by log group is straightforward.
+- **What needs work**: the insights query syntax takes some practice; a few more canned queries for
+  newline-JSON logs would help.
+
+### AWS IAM + GitHub OIDC
+
+- **Used for**: short-lived deploy credentials from a GitHub Actions run.
+- **What worked**: the OIDC trust pattern avoided long-lived keys entirely.
+- **What needs work**: the trust-policy JSON for a specific repo+ref is fiddly to get right first
+  time; a sample policy linked from the console would help.
+
+### Where we stopped (defence of scope)
+
+Secrets Manager is intentionally absent from the first cut: the demo and tests run on the mock
+provider, and the deployed demo talks to the mock store too. Real store credentials are gathered via
+the link flow after account linking, at which point Secrets Manager becomes the right home; this is
+noted in `docs/architecture.md` and `deploy/README.md`.

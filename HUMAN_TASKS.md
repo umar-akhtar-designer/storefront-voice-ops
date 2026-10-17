@@ -33,9 +33,13 @@ against the mock provider. Check items off as they are done.
 
 ## Submission (Stage 8)
 
-- [ ] **Record the demo video** (≈3 min) following `docs/demo-script.md`.
-- [ ] **Fill in the Devpost submission** (description, tech list, links, feedback form) and **submit**
-      before 24 Oct 2026, 12:00 am GMT+5. _(Owner: Lead)_
+- [ ] **Record the demo video** (≈3 min) following `docs/demo-script.md` (works fully offline with
+      `DEMO_MODE=1`; Act 5 needs Bedrock model access).
+- [ ] **Fill in the Devpost submission** from the ready-made copy in `docs/devpost-submission.md`
+      (paste each section; fill the `<placeholder>` links) and **submit** before 24 Oct 2026,
+      12:00 am GMT+5. _(Owner: Lead)_
+- [ ] **Paste the AWS/Bedrock product feedback** from `docs/aws-usage.md` into the required form if
+      the challenge asks for it on the submission page. _(Owner: Lead)_
 
 ## Notes
 
