@@ -10,11 +10,13 @@
   const providerEl = $("provider");
   const resetBtn = $("reset");
 
+  let lastOrderQuery = null;
+
   const speechSupported =
     typeof window.SpeechRecognition === "function" ||
     typeof window.webkitSpeechRecognition === "function";
   $("speech-support").textContent = speechSupported
-    ? "Web Speech: available"
+    ? "Web Speech: available — tap the mic and talk"
     : "Web Speech: not supported in this browser (type instead)";
 
   function addMessage(role, text, meta) {
@@ -52,7 +54,49 @@
     }
   }
 
-  function renderList(el, items, render, emptyText) {
+  function escapeHtml(value) {
+    return String(value).replace(
+      /[&<>"']/g,
+      (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+    );
+  }
+
+  /** A small pill-style action inside a store row. */
+  function chip(label, message, cls) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = `chip${cls ? ` ${cls}` : ""}`;
+    b.textContent = label;
+    b.title = `Says: ${message}`;
+    b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      void send(message);
+    });
+    return b;
+  }
+
+  /** Make a whole row speak a phrase when clicked (keyboard accessible). */
+  function makeClickable(li, message) {
+    li.classList.add("clickable");
+    li.tabIndex = 0;
+    li.title = `Says: ${message}`;
+    li.addEventListener("click", () => void send(message));
+    li.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        void send(message);
+      }
+    });
+  }
+
+  function tag(text, cls) {
+    const t = document.createElement("span");
+    t.className = `tag${cls ? ` ${cls}` : ""}`;
+    t.textContent = text;
+    return t;
+  }
+
+  function renderList(el, items, buildRow, emptyText) {
     el.innerHTML = "";
     if (!items || items.length === 0) {
       const li = document.createElement("li");
@@ -63,64 +107,81 @@
     }
     for (const item of items) {
       const li = document.createElement("li");
-      render(li, item);
+      buildRow(li, item);
       el.appendChild(li);
     }
   }
 
   function renderState(state) {
-    providerEl.textContent = `provider: ${state.provider}`;
+    if (state.currency) window.__currency = state.currency;
+    providerEl.innerHTML = `<i class="dot mint"></i>provider: ${escapeHtml(state.provider)}`;
+
+    /* ---- Low stock: whole row taps into a supplier restock draft ---- */
     renderList(
       $("low-stock"),
       state.lowStock.slice(0, 6),
       (li, p) => {
-        li.innerHTML = `<span>${escapeHtml(p.name)}</span>`;
-        const tag = document.createElement("span");
-        tag.className = "tag";
-        tag.textContent = `${p.stock} left (reorder ${p.reorderPoint})`;
-        li.appendChild(tag);
-        if (p.stock === 0) li.classList.add("warn");
+        li.innerHTML = `<span class="row-main"><span class="row-title">${escapeHtml(p.name)}</span></span>`;
+        li.appendChild(tag(`${p.stock} left`, p.stock <= 2 ? "warn" : ""));
+        const chips = document.createElement("span");
+        chips.className = "chips";
+        chips.appendChild(chip("Restock", `Restock ${p.sku}`));
+        li.appendChild(chips);
+        if (p.stock <= 2) makeClickable(li, `Restock ${p.sku}`);
       },
       "Nothing low on stock.",
     );
 
+    /* ---- Awaiting confirmation: Yes / No speak for you ---- */
     renderList(
       $("awaiting"),
       state.awaitingConfirmation,
       (li, a) => {
-        li.innerHTML = `<span>${escapeHtml(a.summary)}</span>`;
-        const tag = document.createElement("span");
-        tag.className = "tag";
-        tag.textContent = a.requiresCode ? "needs code" : "needs yes";
-        li.appendChild(tag);
-        li.classList.add("warn");
+        li.innerHTML = `<span class="row-main"><span class="row-title">${escapeHtml(a.summary)}</span></span>`;
+        li.appendChild(
+          tag(a.requiresCode ? "needs code" : "needs yes", a.requiresCode ? "lock" : "warn"),
+        );
+        const chips = document.createElement("span");
+        chips.className = "chips";
+        chips.appendChild(chip("Yes", "yes", "yes"));
+        chips.appendChild(chip("No", "no", "no"));
+        li.appendChild(chips);
+        makeClickable(li, "yes");
       },
       "Nothing waiting for confirmation.",
     );
 
+    /* ---- Orders to ship: Ship / Details per order ---- */
     $("pending-total").textContent = `${state.pendingOrders.total} orders waiting to ship.`;
+    lastOrderQuery = `${state.pendingOrders.total} orders`;
     renderList(
       $("pending-orders"),
       state.pendingOrders.items.slice(0, 5),
       (li, o) => {
-        li.innerHTML = `<span>#${escapeHtml(o.id)} — ${escapeHtml(o.customer)}</span>`;
-        const tag = document.createElement("span");
-        tag.className = "tag";
-        tag.textContent = `${o.total.toLocaleString("en-US")} ${state.currency}`;
-        li.appendChild(tag);
+        const money = `${(o.total ?? 0).toLocaleString("en-US")} ${state.currency}`;
+        li.innerHTML = `<span class="row-main"><span class="row-title">#${escapeHtml(o.id)} — ${escapeHtml(o.customer)}</span><span class="row-sub">${escapeHtml(money)}</span></span>`;
+        const chips = document.createElement("span");
+        chips.className = "chips";
+        chips.appendChild(chip("Ship", `Ship order ${o.id} with TCS`));
+        chips.appendChild(chip("Details", `Tell me about order ${o.id}`));
+        li.appendChild(chips);
+        makeClickable(li, `Ship order ${o.id} with TCS`);
       },
       "No orders to ship.",
     );
 
+    /* ---- Audit: status dots + timestamp ---- */
     renderList(
       $("audit"),
       state.audit.slice(0, 6),
       (li, e) => {
-        li.innerHTML = `<span>${escapeHtml(e.tool)}</span>`;
-        const tag = document.createElement("span");
-        tag.className = "tag";
-        tag.textContent = e.status;
-        li.appendChild(tag);
+        const when = new Date(e.ts * 1000 || e.ts).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        const ok = /ok|success|confirm/i.test(e.status);
+        li.innerHTML = `<span class="row-main"><span class="row-title">${escapeHtml(e.tool)}</span><span class="row-sub">${escapeHtml(e.actor ?? "")} · ${escapeHtml(when)}</span></span>`;
+        li.appendChild(tag(e.status, ok ? "ok" : "bad"));
       },
       "No audited actions yet.",
     );
@@ -157,7 +218,7 @@
     const text = message.trim();
     if (!text) return;
     addMessage("user", text);
-    inputEl.value = "";
+    if (inputEl) inputEl.value = "";
     const pending = addMessage("assistant", "…");
     try {
       const res = await fetch("/api/chat", {
@@ -168,7 +229,7 @@
       const data = await res.json();
       pending.remove();
       addMessage("assistant", data.reply || "(no reply)", `engine: ${data.engine}`);
-      engineEl.textContent = `engine: ${data.engine}`;
+      engineEl.innerHTML = `<i class="dot indigo"></i>engine: ${escapeHtml(data.engine ?? "?")}`;
       renderTrace(data.trace);
       speak(data.reply || "");
     } catch (error) {
@@ -177,13 +238,6 @@
       console.error(error);
     }
     void refreshState();
-  }
-
-  function escapeHtml(value) {
-    return String(value).replace(
-      /[&<>"']/g,
-      (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
-    );
   }
 
   formEl.addEventListener("submit", (e) => {

@@ -324,11 +324,17 @@ export function createApp(): express.Express {
       return { name: "cancel_order", args: { orderId: Number(id) } };
     if (/(ship|dispatch|send out).*(order|parcel|package)/.test(s) && id)
       return { name: "mark_order_shipped", args: { orderId: Number(id) } };
-    if (/restock|reorder|supplier/.test(s))
+    if (/restock|reorder|supplier/.test(s)) {
+      // The simulator's restock chips send the SKU explicitly; casual speech falls back to the
+      // most-recently-low product.
+      const sku = s.match(/\b[a-z]{2,5}-[a-z0-9-]{1,9}\b/i)?.[1]?.toUpperCase();
       return {
         name: "draft_restock_message",
-        args: { sku: /cap/.test(s) ? "CAP-NVY" : /hood/.test(s) ? "HOOD-GRY-L" : "TEE-BLK-M" },
+        args: {
+          sku: sku ?? (/cap/.test(s) ? "CAP-NVY" : /hood/.test(s) ? "HOOD-GRY-L" : "TEE-BLK-M"),
+        },
       };
+    }
     if (/\border\b.*\d|order #?\d|\b(1\d{3})\b/.test(s) && id)
       return { name: "get_order", args: { orderId: Number(id) } };
     if (/(running )?low|out of stock|stock check|inventory/.test(s))
