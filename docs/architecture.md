@@ -24,8 +24,8 @@ MCP server (src/mcp/buildServer.ts, one instance per session)
       |
       +--> StoreAdapter (src/adapters/)
       |      |-- MockAdapter        deterministic demo + tests
-      |      |-- ShopifyAdapter     GraphQL Admin API   (Stage 4)
-      |      |-- WooCommerceAdapter REST v3             (Stage 4)
+      |      |-- ShopifyAdapter     GraphQL Admin API
+      |      |-- WooCommerceAdapter REST v3
       |
       +--> AiService (src/ai/)      briefings, drafting, explanations
       |      +--> Amazon Bedrock (Converse API)   when USE_BEDROCK=1
@@ -68,5 +68,4 @@ MCP server (src/mcp/buildServer.ts, one instance per session)
 
 ## Planned (see `STATUS.md`)
 
-- Stage 4: Shopify and WooCommerce adapters.
 - Stage 7: open-source package split and docs polish.

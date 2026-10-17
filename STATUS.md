@@ -86,16 +86,36 @@ Living project status for **Storefront Voice Ops**. Updated at the end of every 
 - CI: new `e2e` job (installs Chromium, runs `npm run test:e2e`, uploads the report).
 - **Verified**: typecheck, lint, format, **105 tests** (15 files), `npm run test:e2e` 3/3, build.
 
+### Stage 4 — Shopify and WooCommerce adapters
+
+- `src/adapters/http.ts`: shared HTTP layer (timeout, retry on 429/5xx respecting `Retry-After`,
+  upstream JSON responses mapped onto typed `StoreError`s: `NOT_FOUND` / `UNAUTHORIZED` /
+  `RATE_LIMITED` / `UPSTREAM`).
+- `src/adapters/shopify.ts`: Admin **GraphQL** adapter — orders (incl. cancelled/fulfilled status
+  mapping and tracking), order fulfilment (`fulfillmentCreateV2` with trackingInfo), cancellation
+  (`orderCancel` with staff note), variant catalogue, inventory adjustments (location resolved from
+  the inventory level), customers. `mapShopify*` mapping helpers are exported and unit-tested.
+- `src/adapters/woocommerce.ts`: **REST v3** adapter — orders with the Woo status union (`pending`
+  - `processing` + `on-hold` → pending; `completed` → shipped; `cancelled/refunded/failed` →
+    cancelled), tracking and cancellation reasons persisted in order `_meta_data`, product-level
+    `low_stock_amount` used as the reorder point.
+- `createStoreAdapter()` now serves `shopify` and `woocommerce` modes; `STORE_PROVIDER` in
+  `.env.example` documents the switch.
+- Tests: WooCommerce runs the full **shared adapter contract** against an in-memory fake of the
+  WordPress REST endpoints; Shopify mapping helpers + GraphQL interactions (filters, write paths,
+  error mapping, credential guards) are unit-tested with a fake fetch. **136 tests** (17 files).
+- Docs: README (connecting a real store), architecture.
+
 ## In progress
 
-- Stage 6 is code-complete; the real deploy is blocked on an AWS account and a domain. Next:
-  Stage 4 (adapters), Stage 7 (docs/open-source), Stage 8 (submission).
+- Stages 6 and 5 are code-complete. Next: Stage 7 (docs/open-source), Stage 8 (submission).
 
 ## Blocked / waiting on a human
 
 - Public GitHub repo creation and first push (Lead).
 - AWS account, billing alarm, Bedrock model access (AWS owner).
-- Shopify development store + custom-app token (Backend).
+- Shopify development store + custom-app token (Backend) — needed to run the adapter contract
+  against a live store (`defineAdapterContract("ShopifyAdapter", ...)` is ready to wire).
 - WooCommerce test-site keys (Backend).
 - Alexa developer account login for `alexa-ai` (Lead).
 - Devpost draft form field inventory; video recording and final submit (Lead).

@@ -95,6 +95,12 @@ npm run lint         # ESLint
 
 See [.env.example](.env.example) for the full list. Never commit a real `.env`.
 
+To point the server at a real store, set `STORE_PROVIDER=shopify` (with `SHOPIFY_STORE_DOMAIN`,
+`SHOPIFY_ADMIN_TOKEN`) or `STORE_PROVIDER=woocommerce` (with `WOO_BASE_URL`, `WOO_KEY`,
+`WOO_SECRET`). Both adapters map onto the same tool surface — no tool or prompt changes — and every
+upstream failure is turned into a typed error (`NOT_FOUND`, `UNAUTHORIZED`, `RATE_LIMITED`,
+`UPSTREAM`) that the safety layer renders as a spoken, human reply.
+
 ## Connecting Alexa+
 
 Connection details are recorded in [docs/alexa-plus-notes.md](docs/alexa-plus-notes.md), including
