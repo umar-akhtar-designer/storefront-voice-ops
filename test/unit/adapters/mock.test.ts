@@ -50,4 +50,15 @@ describe("MockAdapter specifics", () => {
       /negative/i,
     );
   });
+
+  it("reset() restores mutated data to the seeded state", async () => {
+    const adapter = new MockAdapter({ now: fixedClock });
+    const before = await adapter.getProducts();
+    const product = before[0]!;
+    await adapter.adjustStock(product.sku, 5, "test");
+    expect((await adapter.getProducts({ sku: product.sku }))[0]!.stock).toBe(product.stock + 5);
+
+    adapter.reset();
+    expect((await adapter.getProducts({ sku: product.sku }))[0]!.stock).toBe(product.stock);
+  });
 });

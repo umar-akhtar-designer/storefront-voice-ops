@@ -471,6 +471,50 @@ export function createApp(): express.Express {
       });
   });
 
+  // ---- Public demo controls (only when DEMO_MODE is enabled) ----
+  if (config.DEMO_MODE) {
+    const resetDemo = async (): Promise<{
+      clearedPending: number;
+      clearedAudit: number;
+      resetAt: string;
+    }> => {
+      const current = getServices();
+      current.adapter.reset?.();
+      const db = getDb();
+      const clearedPending = new PendingActionRepository(db).clearAll();
+      const clearedAudit = new AuditRepository(db).clearAll();
+      await resetChatClient();
+      const resetAt = new Date().toISOString();
+      logger.info({ clearedPending, clearedAudit }, "demo store reset");
+      return { clearedPending, clearedAudit, resetAt };
+    };
+
+    app.use("/api/demo", guardOrigin, limiter);
+
+    app.get("/api/demo", (_req, res) => {
+      const current = getServices();
+      res.json({
+        demoMode: true,
+        provider: current.adapter.provider,
+        currency: current.adapter.currency,
+      });
+    });
+
+    app.post("/api/demo/reset", (_req, res) => {
+      const task = queue.then(
+        () => resetDemo(),
+        () => resetDemo(),
+      );
+      queue = task.catch(() => undefined);
+      task
+        .then((result) => res.json({ ok: true, ...result }))
+        .catch((error: unknown) => {
+          logger.error({ err: error }, "demo reset failed");
+          res.status(500).json({ ok: false, error: "Reset failed." });
+        });
+    });
+  }
+
   return app;
 }
 

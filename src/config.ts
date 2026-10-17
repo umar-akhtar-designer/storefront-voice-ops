@@ -35,6 +35,9 @@ const EnvSchema = z.object({
   MCP_CANONICAL_URI: z.string().default("http://localhost:3000/mcp"),
   ALLOWED_ORIGINS: z.string().default("").transform(parseCsv),
 
+  /** Public demo: exposes POST /api/demo/reset to reseed the store. Only enable on disposable data. */
+  DEMO_MODE: booleanFlag(false),
+
   CONFIRM_TTL_SECONDS: z.coerce.number().int().min(10).max(3600).default(120),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().min(1000).default(60000),
   RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(120),

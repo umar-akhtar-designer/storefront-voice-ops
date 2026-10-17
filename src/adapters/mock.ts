@@ -240,20 +240,43 @@ export class MockAdapter implements StoreAdapter {
   readonly currency = DEFAULT_CURRENCY;
 
   private readonly clock: () => Date;
-  private readonly productMap: Map<string, Product>;
-  private readonly customerList: Customer[];
-  private readonly orderMap: Map<string, Order>;
+  private readonly options: MockAdapterOptions;
+  private productMap: Map<string, Product>;
+  private customerList: Customer[];
+  private orderMap: Map<string, Order>;
 
   constructor(options: MockAdapterOptions = {}) {
+    this.options = options;
     this.clock = options.now ?? (() => new Date());
+    const seed = this.build(options);
+    this.productMap = seed.productMap;
+    this.customerList = seed.customerList;
+    this.orderMap = seed.orderMap;
+  }
+
+  private build(options: MockAdapterOptions): {
+    productMap: Map<string, Product>;
+    customerList: Customer[];
+    orderMap: Map<string, Order>;
+  } {
     const seed = buildSeed(this.clock(), options.seed ?? 20261017);
     const products = options.products ?? seed.products;
     const customers = options.customers ?? seed.customers;
     const orders = options.orders ?? seed.orders;
 
-    this.productMap = new Map(products.map((p) => [p.sku, { ...p }]));
-    this.customerList = customers.map((c) => ({ ...c }));
-    this.orderMap = new Map(orders.map((o) => [o.id, structuredClone(o)]));
+    return {
+      productMap: new Map(products.map((p) => [p.sku, { ...p }])),
+      customerList: customers.map((c) => ({ ...c })),
+      orderMap: new Map(orders.map((o) => [o.id, structuredClone(o)])),
+    };
+  }
+
+  /** Reseed back to the initial state (public demo only). */
+  reset(): void {
+    const seed = this.build(this.options);
+    this.productMap = seed.productMap;
+    this.customerList = seed.customerList;
+    this.orderMap = seed.orderMap;
   }
 
   private clone<T>(value: T): T {

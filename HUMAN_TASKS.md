@@ -21,6 +21,10 @@ against the mock provider. Check items off as they are done.
 
 ## Decide / provide
 
+- [ ] **Verify the container build** (`docker compose up --build`) on a machine with the Docker
+      daemon running. The agent environment had no running daemon, so the Dockerfile and
+      `.dockerignore` are written but were only validated by `npm run build`, not by an actual
+      image build. _(Owner: any dev with Docker)_
 - [ ] **Domain for the public demo** (or confirm we deploy to an AWS-provided URL). Sets
       `MCP_CANONICAL_URI`, which must be `https` for Alexa+ account linking. _(Owner: Lead)_
 - [ ] **FAQ answers to confirm** (recorded in `docs/alexa-plus-notes.md`): hackathon Alexa+ test

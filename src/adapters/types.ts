@@ -104,4 +104,10 @@ export interface StoreAdapter {
   getSalesBetween(from: Date, to: Date): Promise<SalesSummary>;
   getTopSellers(from: Date, to: Date, limit: number): Promise<TopSeller[]>;
   getCustomer(query: string): Promise<Customer | null>;
+
+  /**
+   * Reseed a disposable provider back to its initial state. Only the mock/demo provider implements
+   * this; real store platforms leave it undefined and never reset.
+   */
+  reset?(): void;
 }

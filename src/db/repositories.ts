@@ -147,6 +147,11 @@ export class PendingActionRepository {
       .run(nowIso);
     return result.changes;
   }
+
+  /** Delete every pending action. Used by the public demo reset. Returns the count removed. */
+  clearAll(): number {
+    return this.db.prepare("DELETE FROM pending_actions").run().changes;
+  }
 }
 
 export interface NewAuditEntry {
@@ -220,5 +225,10 @@ export class AuditRepository {
       ...(row.result_summary !== null ? { resultSummary: row.result_summary } : {}),
       ...(row.request_id !== null ? { requestId: row.request_id } : {}),
     }));
+  }
+
+  /** Delete every audit entry. Used by the public demo reset. Returns the count removed. */
+  clearAll(): number {
+    return this.db.prepare("DELETE FROM audit_log").run().changes;
   }
 }

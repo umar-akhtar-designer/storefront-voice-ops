@@ -44,11 +44,25 @@ Living project status for **Storefront Voice Ops**. Updated at the end of every 
   `build`, and a full `npm run dev` + `npm run test:smoke` flow (briefing → list pending → ship →
   confirm → inspect) all pass.
 
+### Stage 6 — deployment prep (mock provider)
+
+- `DEMO_MODE` flag; `GET /api/demo` and `POST /api/demo/reset` (guarded by origin + rate limit)
+  reseed the mock store and clear pending actions + audit log.
+- Adapter contract gained an optional `reset()` for disposable demo providers; `MockAdapter.reset()`
+  rebuilds from seed.
+- Docker hardening: `init`, `read_only`, `no-new-privileges`, `cap_drop: ALL`, `tmpfs: /tmp` in
+  `docker-compose.yml`; added `.dockerignore`.
+- Deploy files: `.github/workflows/deploy.yml` (OIDC → ECR → ECS, gated on `AWS_DEPLOY=true`),
+  `deploy/aws/ecs-task-definition.json` (Fargate + EFS + CloudWatch), `deploy/README.md`.
+- `docs/aws-usage.md` updated; `HUMAN_TASKS.md` lists the external blockers.
+- **Verified**: typecheck, lint, format, **86 tests** (11 files), build. Container build not verified
+  (no Docker daemon in the agent environment — see `HUMAN_TASKS.md`).
+
 ## In progress
 
-- Stage 6 (deploy with the mock provider): Docker hardening, infra code, deploy workflow, demo mode,
-  public demo reset. Then Stage 3 (Bedrock), Stage 5 (simulator UI + Playwright), Stage 4 (adapters),
-  Stage 7 (docs/open-source), Stage 8 (submission).
+- Stage 6 is code-complete; the real deploy is blocked on an AWS account and a domain. Next:
+  Stage 3 (Bedrock), Stage 5 (simulator UI + Playwright), Stage 4 (adapters), Stage 7
+  (docs/open-source), Stage 8 (submission).
 
 ## Blocked / waiting on a human
 

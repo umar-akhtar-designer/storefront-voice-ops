@@ -2,6 +2,7 @@ services:
   app:
     build: .
     image: storefront-voice-ops:local
+    init: true
     ports:
       - "3000:3000"
     environment:
@@ -9,9 +10,18 @@ services:
       PORT: "3000"
       HOST: 0.0.0.0
       AUTH_MODE: demo
+      DEMO_MODE: "1"
+      ALLOWED_ORIGINS: "*"
       STORE_PROVIDER: mock
       DB_PATH: /app/data/storefront.sqlite
       USE_BEDROCK: "0"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
     volumes:
       - storefront-data:/app/data
     healthcheck:
