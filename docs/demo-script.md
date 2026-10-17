@@ -1,65 +1,73 @@
-# Demo script (~3 minutes)
+# Demo video script (~3 minutes, speaker-ready)
 
-Recording checklist for the lead. Everything except Act 5 needs no AWS access; the fallback line
-keeps the video valid either way. Record at 1080p, use the simulator at `http://localhost:3000`
-(`npm run dev`, `DEMO_MODE=1` in `.env`), and show the microphone button being used at least once —
-voice is the product.
+How to record: open the simulator at `http://localhost:3000` (`npm run dev`, `DEMO_MODE=1` in
+`.env`), fullscreen the browser, record 1080p with microphone on. Speak the "SAY" lines; do the
+"DO" actions. The dialog below is written to be spoken exactly as-is — keep the pace natural.
 
-## Act 0 — Hook (0:00–0:15)
+## Beat 0 — Hook (0:00–0:15)
 
-- On screen: simulator with the three panes visible (conversation, live store, inspector).
-- Say: "A small store in Karachi runs ~400 SKUs. Shopify orders pile up faster than the owner can
-  answer email. This server lets them run the whole shop by voice — through Alexa+ or right here in
-  this browser — with every write gated and audited."
+- DO: fullscreen simulator; three panes visible.
+- SAY: "Meet Bilal — he sells clothes online from Karachi. Every evening his phone has forty
+  messages: 'where is my order?', 'did my parcel ship?'. Storefront Voice Ops is a voice assistant
+  for exactly this owner. In this demo it's the built-in Alexa+ flow — same MCP server, same tools."
 
-## Act 1 — Question the store (0:15–0:45)
+## Beat 1 — A quick hello (0:15–0:30)
 
-- Type or hold-mic: **"What's running low in stock?"**
-- Point at the inspector pane: `list_low_stock` fired, low-stock list appears in the Store pane.
-- Say: "One tool call. And it can take dependencies — restock suggestions are built in using AWS
-  weekly trends." _(skip the trends line if that tool is not on)_
+- DO: type `hello` → Send. (It replies with the help menu.)
+- SAY: "Simple hello first. The assistant tells the owner exactly what it can do — no guessing."
+- DO: click the **Low stock** example chip.
 
-## Act 2 — Briefing (0:45–1:15)
+## Beat 2 — Low stock (0:30–0:55)
 
-- Ask: **"Give me today's briefing."**
-- Narrate while it speaks: pending orders count, low stock, yesterday's sales — number-formatted for
-  speech, not markdown.
-- Say: "The briefing is assembled from three tools, then rephrased by Amazon Bedrock Nova. If
-  Bedrock is down, an offline template still answers — that's the degradation path tested in CI."
+- DO: point the mouse at the reply; then point at the Store pane "Low stock" list.
+- SAY: "'What is running low?' — one tool call, and the Store pane updates live. Wool Scarf is
+  zero, Denim Jacket is two. And see this — the answer is spoken out loud, so he can cook and ask
+  at the same time." (let speechSynthesis read a couple of lines)
 
-## Act 3 — The dangerous part (1:15–2:15)
+## Beat 3 — Tap a card, ship an order (0:55–1:40)
 
-_This is the section judges care about: writes._
+- DO: click the **Ship** chip on any order card (e.g. #1008).
+- SAY: "Now the dangerous part. 'Ship order 1008.' — notice the assistant does NOT act. It asks.
+  This is the safety line: every write needs a yes, and the pending action is stored in a database
+  with a time limit — it expires if he walks away."
+- DO: click the **Yes** chip on the "Awaiting confirmation" card.
+- SAY: "Confirm — order ships. Watch the audit log at the right: who did what, when. This is the
+  same gate a real Shopify store would have."
 
-- Ask: **"Ship order 1004."**
-- Point: the server replies with what it will do and an order of magnitude if needed, and asks for a
-  spoken confirmation code. Show the Store pane: nothing changed yet.
-- Say: "A confirmation can never skip the audit trail; the pending action is already persisted to
-  SQLite with a TTL."
-- Say: **"Confirm <spoken code from the reply>."**
-- Point: Store pane order flips to shipped, new audit entry appears.
-- Follow up: "That's the same confirmation gate that would protect Shopify or WooCommerce in
-  production — the tools never talk to a platform directly."
+## Beat 4 — It refuses (1:40–2:00)
 
-## Act 4 — Guardrails (2:15–2:35)
+- DO: click the order we just shipped (it is still on the list or type `Ship order …` for it), then
+  type `Cancel order …` → Send. If it's already shipped it refuses.
+- SAY: "And if he changes his mind after shipping? It refuses politely — a shipped order cannot be
+  cancelled by voice. That's the difference between a demo and something you trust with your shop."
 
-- Ask: **"Cancel order 1004."** — the order we just shipped. It refuses politely (an order that
-  shipped cannot be cancelled).
-- Optional fast cut: paste an injection-style prompt into the briefing view, show the untrusted-data
-  rule and the injection filter holding.
+## Beat 5 — Order details (2:00–2:25)
 
-## Act 5 — Real Bedrock (2:35–2:50)
+- DO: click **Details** on another order card (e.g. #1023).
+- SAY: "Customers also ask questions: 'where is my order?' — one tap and he has the items, the
+  price, the customer, the status. He can answer from memory, no app-switching."
+- DO: quickly show the supplier draft: click a **Restock** chip on a low-stock card.
+- SAY: "Even restocking — it drafts the supplier message ready for WhatsApp."
 
-- Terminal: `USE_BEDROCK=1 npm run dev` (mention it needs model access on the AWS account).
-- Ask the same briefing question again; same shape, different wording, served by a live Bedrock
-  Converse call.
-- Fallback if no model access: show `npm run eval` (8 AI cases) passing offline and explain the same
-  eval set runs against the real model when enabled.
+## Beat 6 — The real AI + AWS (2:25–2:50)
 
-## Act 6 — Close (2:50–3:10)
+- DO: terminal: `USE_BEDROCK=1 npm run dev` (if model access exists) and ask today's briefing; or
+  show `npm run eval` passing 8/8 offline.
+- SAY: "Under the hood it talks to this MCP server over the real protocol. The brain is Amazon
+  Bedrock — today's briefing and drafted replies are rephrased by Nova. If Bedrock is off, it
+  degrades to fast deterministic answers — same data, zero downtime."
 
-- Say: "The store adapter layer is open source — `@voice-ops/store-adapters` on npm — with mock,
-  Shopify, and WooCommerce adapters behind one contract, and a `defineAdapterContract` suite so any
-  new platform inherits the same guarantees."
-- Final screen: repo README with links; "Built during the Amazon Developers Hackathon — Alexa+ track,
-  AWS Builder and Open Source challenges."
+## Beat 7 — Close (2:50–3:10)
+
+- DO: show README in the browser; stop on the repo link screen.
+- SAY: "The store layer is open source — Shopify and WooCommerce adapters behind one contract.
+  Built with Amazon Bedrock, MCP, and a lot of respect for the owner's trust. This is Storefront
+  Voice Ops for the Amazon Developers Hackathon — Alexa+ track."
+
+## Recording checklist
+
+- [ ] `npm run dev` running with `DEMO_MODE=1`; simulator fullscreen, close extra tabs
+- [ ] Mic toggle ON ("Speak replies aloud") for Beat 2 (speechSynthesis reads a reply)
+- [ ] Reset demo before recording (↺ Reset demo) so order 1008 is unshipped
+- [ ] Terminal for Beat 6 with `USE_BEDROCK=1` in a second tab (or `npm run eval` if no AWS)
+- [ ] One take ≤ 3:15; re-record if any long pause; upload to Devpost before 24 Oct 2026
