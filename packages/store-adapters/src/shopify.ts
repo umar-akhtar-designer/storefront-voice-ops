@@ -67,6 +67,14 @@ const ORDER_QUERY = `
   }
 `;
 
+const ORDER_SEARCH_BY_NAME_QUERY = `
+  query OrderSearchByName($first: Int!, $query: String!) {
+    orders(first: $first, query: $query, sortKey: CREATED_AT, reverse: true) {
+      nodes { ${ORDER_FIELDS} }
+    }
+  }
+`;
+
 const ORDER_FOR_FULFILLMENT_QUERY = `
   query OrderForFulfillment($id: ID!) {
     order(id: $id) {
@@ -159,7 +167,8 @@ export interface ShopifyOrderNode {
     email?: string | null;
     phone?: string | null;
   } | null;
-  fulfillments: { trackingInfo: { number: string | null; company: string | null }[] };
+  /** Real stores return [] for unfulfilled orders; trackingInfo is absent without tracking. */
+  fulfillments?: { trackingInfo?: { number: string | null; company: string | null }[] } | null;
   lineItems: {
     nodes: {
       sku: string | null;
@@ -229,7 +238,8 @@ export function shopifyOrderStatus(
 
 export function mapShopifyOrder(node: ShopifyOrderNode): Order {
   const currency = node.totalPriceSet.shopMoney.currencyCode;
-  const tracking = node.fulfillments.trackingInfo[0];
+  // Real stores return an empty fulfillments array (and null trackingInfo) for unfulfilled orders.
+  const tracking = node.fulfillments?.trackingInfo?.[0];
   return {
     id: gidToId(node.id),
     customerId: gidToId(node.customer?.id ?? ""),
@@ -303,7 +313,7 @@ export class ShopifyAdapter implements StoreAdapter {
     this.domain = options.domain ?? envString("SHOPIFY_STORE_DOMAIN");
     this.token = options.token ?? envString("SHOPIFY_ADMIN_TOKEN");
     this.apiVersion = options.apiVersion ?? (envString("SHOPIFY_API_VERSION") || "2026-01");
-    this.currency = options.currency ?? "USD";
+    this.currency = (options.currency ?? envString("SHOPIFY_CURRENCY")) || "USD";
     this.fetchImpl = options.fetch ?? fetch;
     this.timeoutMs = options.timeoutMs ?? 15_000;
     this.retries = options.retries ?? 2;
@@ -332,8 +342,18 @@ export class ShopifyAdapter implements StoreAdapter {
     const data = await this.graphql<{ order: ShopifyOrderNode | null }>(ORDER_QUERY, {
       id: toGid("Order", id),
     });
-    if (!data.order) throw new NotFoundError(`Order ${id} not found`);
-    return data.order;
+    if (data.order) return data.order;
+    // Real stores name orders "#1002" while the API id is a largeSnowflake such as
+    // "18925912522825". Search by name and return the node carrying the real id.
+    if (/^\d+$/.test(id)) {
+      const search = await this.graphql<{ orders: { nodes: ShopifyOrderNode[] } }>(
+        ORDER_SEARCH_BY_NAME_QUERY,
+        { first: 1, query: `name:${id}` },
+      );
+      const node = search.orders.nodes[0];
+      if (node) return node;
+    }
+    throw new NotFoundError(`Order ${id} not found`);
   }
 
   async getOrders(filter: OrderFilter = {}): Promise<Page<Order>> {
@@ -361,11 +381,14 @@ export class ShopifyAdapter implements StoreAdapter {
   }
 
   async fulfillOrder(id: string, input: FulfillOrderInput): Promise<Order> {
+    const node = await this.fetchOrderNode(id);
+    if (node.cancelledAt) throw new ValidationError("Cannot fulfil a cancelled order");
+    // Idempotent: an already-fulfilled order is returned unchanged.
+    if (node.displayFulfillmentStatus === "FULFILLED") return mapShopifyOrder(node);
+
     const data = await this.graphql<{
       order: {
         id: string;
-        cancelledAt: string | null;
-        displayFulfillmentStatus: string;
         fulfillmentOrders: {
           nodes: {
             id: string;
@@ -374,13 +397,10 @@ export class ShopifyAdapter implements StoreAdapter {
           }[];
         };
       } | null;
-    }>(ORDER_FOR_FULFILLMENT_QUERY, { id: toGid("Order", id) });
+    }>(ORDER_FOR_FULFILLMENT_QUERY, { id: node.id });
 
     const order = data.order;
     if (!order) throw new NotFoundError(`Order ${id} not found`);
-    if (order.cancelledAt) throw new ValidationError("Cannot fulfil a cancelled order");
-    // Idempotent: an already-fulfilled order is returned unchanged.
-    if (order.displayFulfillmentStatus === "FULFILLED") return this.getOrder(id);
 
     const groups = order.fulfillmentOrders.nodes
       .filter((fo) => fo.status !== "CLOSED" && fo.status !== "CANCELLED")
@@ -427,7 +447,7 @@ export class ShopifyAdapter implements StoreAdapter {
     const result = await this.graphql<{
       orderCancel: { orderCancelUserErrors: { field: string[]; message: string }[] };
     }>(ORDER_CANCEL_MUTATION, {
-      orderId: toGid("Order", id),
+      orderId: node.id,
       reason: "OTHER",
       refund: false,
       restock: true,

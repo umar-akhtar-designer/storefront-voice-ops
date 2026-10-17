@@ -6,12 +6,13 @@ import {
   mapShopifyProduct,
   shopifyOrderStatus,
   toGid,
+  NotFoundError,
   type ShopifyCustomerNode,
   type ShopifyOrderNode,
   type ShopifyVariantNode,
 } from "@voice-ops/store-adapters";
 
-const ORDER_NODE: ShopifyOrderNode = {
+const STRUCTURED_ORDER_NODE: ShopifyOrderNode = {
   id: "gid://shopify/Order/9001",
   name: "#9001",
   createdAt: "2026-04-10T09:30:00Z",
@@ -67,7 +68,7 @@ describe("Shopify mapping helpers", () => {
   });
 
   it("maps an unfulfilled order", () => {
-    const order = mapShopifyOrder(ORDER_NODE);
+    const order = mapShopifyOrder(STRUCTURED_ORDER_NODE);
     expect(order.id).toBe("9001");
     expect(order.customerId).toBe("55");
     expect(order.customerName).toBe("Ayesha Khan");
@@ -85,7 +86,7 @@ describe("Shopify mapping helpers", () => {
 
   it("maps a shipped order with tracking", () => {
     const shipped: ShopifyOrderNode = {
-      ...ORDER_NODE,
+      ...STRUCTURED_ORDER_NODE,
       displayFulfillmentStatus: "FULFILLED",
       fulfillments: { trackingInfo: [{ number: "TRK-9001", company: "TCS" }] },
     };
@@ -96,7 +97,10 @@ describe("Shopify mapping helpers", () => {
   });
 
   it("maps a cancelled order", () => {
-    const status = shopifyOrderStatus({ ...ORDER_NODE, cancelledAt: "2026-04-11T00:00:00Z" });
+    const status = shopifyOrderStatus({
+      ...STRUCTURED_ORDER_NODE,
+      cancelledAt: "2026-04-11T00:00:00Z",
+    });
     expect(status).toBe("cancelled");
   });
 
@@ -144,7 +148,7 @@ describe("ShopifyAdapter over a fake GraphQL endpoint", () => {
         variables: Record<string, unknown>;
       };
       calls.push(body);
-      const data = handler ? handler(body) : await defaultHandler(body);
+      const data = handler ? await handler(body) : await defaultHandler(body);
       return new Response(JSON.stringify(data), {
         status: 200,
         headers: { "content-type": "application/json" },
@@ -169,7 +173,7 @@ describe("ShopifyAdapter over a fake GraphQL endpoint", () => {
       };
     }
     if (body.query.includes("query Order(")) {
-      return { data: { order: ORDER_NODE } };
+      return { data: { order: STRUCTURED_ORDER_NODE } };
     }
     if (body.query.includes("query Variants")) {
       return { data: { productVariants: { nodes: [VARIANT_NODE] } } };
@@ -254,6 +258,92 @@ describe("ShopifyAdapter over a fake GraphQL endpoint", () => {
   it("propagates errors when the endpoint returns 401", async () => {
     const { adapter } = fakeAdapter({ status: 401 });
     await expect(adapter.getProducts()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+  });
+
+  it("resolves order-number ids by searching by name when the direct lookup misses", async () => {
+    // Real stores hand out order numbers ("1002") while the API id is a Snowflake,
+    // so the adapter must fall back to a name search and use the returned node id.
+    const { adapter, calls } = fakeAdapter({
+      handler: (body) => {
+        if (body.query.includes("query Order(")) {
+          return { data: { order: null } };
+        }
+        if (body.query.includes("query OrderSearchByName")) {
+          return {
+            data: { orders: { nodes: [STRUCTURED_ORDER_NODE] } },
+          };
+        }
+        return { data: {} };
+      },
+    });
+    const order = await adapter.getOrder("1002");
+    expect(order.id).toBe("9001");
+    const searchCall = calls.find((call) => call.query.includes("query OrderSearchByName"));
+    expect(searchCall?.variables.query).toBe("name:1002");
+  });
+
+  it("throws NotFoundError when direct lookup and name search both miss", async () => {
+    const { adapter } = fakeAdapter({
+      handler: (body) => {
+        if (body.query.includes("query Order(")) return { data: { order: null } };
+        if (body.query.includes("query OrderSearchByName")) {
+          return { data: { orders: { nodes: [] } } };
+        }
+        return { data: {} };
+      },
+    });
+    await expect(adapter.getOrder("404")).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it("uses the resolved node id when fulfilling an order-number id", async () => {
+    let fulfilled = false;
+    const { adapter, calls } = fakeAdapter({
+      handler: async (body) => {
+        if (body.query.includes("mutation FulfillmentCreate")) {
+          fulfilled = true;
+          return await defaultHandler(body);
+        }
+        if (body.query.includes("query Order(")) {
+          return {
+            data: {
+              order: {
+                ...STRUCTURED_ORDER_NODE,
+                displayFulfillmentStatus: fulfilled ? "FULFILLED" : "UNFULFILLED",
+              },
+            },
+          };
+        }
+        if (body.query.includes("query OrderForFulfillment")) {
+          return {
+            data: {
+              order: {
+                id: "gid://shopify/Order/9001",
+                fulfillmentOrders: {
+                  nodes: [
+                    {
+                      id: "gid://shopify/FulfillmentOrder/11",
+                      status: "OPEN",
+                      lineItems: {
+                        nodes: [
+                          { id: "gid://shopify/FulfillmentOrderLineItem/21", remainingQuantity: 2 },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          };
+        }
+        return await defaultHandler(body);
+      },
+    });
+    const result = await adapter.fulfillOrder("1002", { tracking: "TCS-77", carrier: "TCS" });
+    expect(result.status).toBe("shipped");
+    const foCall = calls.find((call) => call.query.includes("query OrderForFulfillment"));
+    expect(foCall?.variables.id).toBe("gid://shopify/Order/9001");
+    const mutation = calls.find((call) => call.query.includes("mutation FulfillmentCreate"));
+    expect(JSON.stringify(mutation?.variables)).toContain("gid://shopify/FulfillmentOrder/11");
   });
 
   it("maps a 404 to NotFoundError", async () => {

@@ -18,6 +18,7 @@ export function createStoreAdapter(): StoreAdapter {
         domain: config.SHOPIFY_STORE_DOMAIN,
         token: config.SHOPIFY_ADMIN_TOKEN,
         apiVersion: config.SHOPIFY_API_VERSION,
+        currency: config.SHOPIFY_CURRENCY || undefined,
       });
     case "woocommerce":
       return createWooCommerceAdapter({

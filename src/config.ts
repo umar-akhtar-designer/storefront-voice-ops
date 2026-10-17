@@ -47,6 +47,12 @@ const EnvSchema = z.object({
   SHOPIFY_STORE_DOMAIN: z.string().optional().default(""),
   SHOPIFY_ADMIN_TOKEN: z.string().optional().default(""),
   SHOPIFY_API_VERSION: z.string().default("2026-01"),
+  /** Shop currency for money values the Admin API does not label (e.g. product prices). */
+  SHOPIFY_CURRENCY: z
+    .string()
+    .regex(/^[A-Z]{3}$/)
+    .optional()
+    .default(""),
   WOO_BASE_URL: z.string().optional().default(""),
   WOO_KEY: z.string().optional().default(""),
   WOO_SECRET: z.string().optional().default(""),
