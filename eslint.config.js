@@ -12,6 +12,7 @@ export default tseslint.config(
       "public/**",
       "infra/**",
       "test-results",
+      "docs/**",
     ],
   },
   js.configs.recommended,

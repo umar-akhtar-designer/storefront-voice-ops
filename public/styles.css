@@ -721,3 +721,57 @@ code {
     transition: none !important;
   }
 }
+
+/* ---- Multi-store profiles ---- */
+.profile-select {
+  max-width: 190px;
+  text-overflow: ellipsis;
+}
+.mini-form {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+.mini-form input,
+.mini-form select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #e4e2f4;
+  border-radius: 9px;
+  background: #fff;
+  font: inherit;
+  font-size: 0.85rem;
+}
+.mini-form button {
+  margin-top: 2px;
+  border-radius: 9px;
+}
+.field-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b6890;
+}
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(28, 25, 60, 0.45);
+  display: grid;
+  place-items: center;
+  z-index: 60;
+}
+.dialog {
+  width: min(420px, 92vw);
+  background: #fff;
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: 0 22px 60px rgba(20, 16, 55, 0.35);
+}
+.dialog h3 {
+  margin: 0 0 4px;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}

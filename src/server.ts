@@ -20,8 +20,9 @@ import { ConfirmationService } from "./safety/confirm.js";
 import { createAuthMiddleware } from "./safety/auth.js";
 import { originGuard } from "./safety/origin.js";
 import { rateLimiter } from "./safety/rateLimit.js";
-import { createStoreAdapter } from "./adapters/factory.js";
 import type { StoreAdapter } from "@voice-ops/store-adapters";
+import { ProfileManager, type StoreProfile } from "./adapters/profiles.js";
+import { ManualAdapter } from "./adapters/manual.js";
 import { createAiService } from "./ai/index.js";
 import type { AiService } from "./ai/types.js";
 
@@ -32,6 +33,7 @@ export interface Services {
   confirm: ConfirmationService;
   audit: AuditLogger;
   ai: AiService;
+  profiles: ProfileManager;
 }
 
 let services: Services | undefined;
@@ -47,9 +49,25 @@ export function getServices(): Services {
     const confirm = new ConfirmationService(new PendingActionRepository(db), audit, {
       ttlSeconds: config.CONFIRM_TTL_SECONDS,
     });
-    services = { adapter: createStoreAdapter(), confirm, audit, ai: createAiService() };
+    const profiles = new ProfileManager(db);
+    profiles.ensureSeeded();
+    services = {
+      adapter: profiles.currentAdapter(),
+      confirm,
+      audit,
+      ai: createAiService(),
+      profiles,
+    };
   }
   return services;
+}
+
+/** Rebind the shared adapter slot after a profile switch. */
+function bindProfileAdapter(id: number): { profile: StoreProfile; adapter: StoreAdapter } {
+  const current = getServices();
+  const bound = current.profiles.activate(id);
+  current.adapter = bound.adapter;
+  return bound;
 }
 
 function baseDeps(current: Services): ServerDeps {
@@ -540,6 +558,141 @@ export function createApp(): express.Express {
     } catch (error) {
       logger.error({ err: error }, "state failed");
       res.status(500).json({ error: "State unavailable." });
+    }
+  });
+
+  // ---- Multi-store profiles ----
+  app.get("/api/profiles", guardOrigin, limiter, (_req, res) => {
+    try {
+      const current = getServices();
+      const active = current.profiles.active;
+      res.json({
+        active: active?.id ?? null,
+        profiles: current.profiles.list().map((p) => ({
+          id: p.id,
+          name: p.name,
+          provider: p.provider,
+          active: p.active,
+        })),
+      });
+    } catch (error) {
+      logger.error({ err: error }, "profile list failed");
+      res.status(500).json({ error: "Could not list stores." });
+    }
+  });
+
+  app.post("/api/profiles", guardOrigin, limiter, async (req, res) => {
+    try {
+      const { name, provider, settings } = req.body as {
+        name?: string;
+        provider?: string;
+        settings?: Record<string, string>;
+      };
+      const current = getServices();
+      const profile = current.profiles.create({
+        name: String(name ?? ""),
+        provider: String(provider ?? ""),
+        settings: (settings ?? {}) as never,
+      });
+      // Probe connectivity so the user learns immediately whether the store answers.
+      let reachable = true;
+      try {
+        await current.profiles.adapterFor(profile).getProducts();
+      } catch (error) {
+        reachable = false;
+        logger.warn({ err: error }, "profile creation probe failed");
+      }
+      res.json({ ok: true, profile: { id: profile.id, name: profile.name, provider: profile.provider }, reachable });
+    } catch (error) {
+      logger.warn({ err: error }, "profile creation refused");
+      res.status(400).json({ ok: false, error: (error as Error).message });
+    }
+  });
+
+  app.post("/api/profiles/activate", guardOrigin, limiter, (req, res) => {
+    try {
+      const id = Number((req.body as { id?: number }).id);
+      if (!Number.isInteger(id)) {
+        res.status(400).json({ ok: false, error: "A store id is required" });
+        return;
+      }
+      const { profile, adapter } = bindProfileAdapter(id);
+      res.json({
+        ok: true,
+        profile: { id: profile.id, name: profile.name, provider: profile.provider },
+        provider: adapter.provider,
+        currency: adapter.currency,
+      });
+    } catch (error) {
+      logger.warn({ err: error }, "profile activation failed");
+      res.status(400).json({ ok: false, error: (error as Error).message });
+    }
+  });
+
+  // ---- Manual-seller endpoints: add products / orders without any website ----
+  const asManual = (): ManualAdapter => {
+    const adapter = getServices().profiles.currentAdapter();
+    if (!(adapter instanceof ManualAdapter)) {
+      throw new Error("Switch to the manual store profile first (or create one).");
+    }
+    return adapter;
+  };
+
+  app.get("/api/manual/products", guardOrigin, limiter, async (_req, res) => {
+    try {
+      const products = await asManual().getProducts();
+      res.json({ items: products });
+    } catch (error) {
+      res.status(400).json({ items: [], error: (error as Error).message });
+    }
+  });
+
+  app.post("/api/manual/products", guardOrigin, limiter, (req, res) => {
+    try {
+      const body = req.body as Record<string, unknown>;
+      const product = asManual().upsertProduct({
+        sku: String(body.sku ?? ""),
+        name: String(body.name ?? ""),
+        stock: Number(body.stock ?? 0),
+        price: Number(body.price ?? 0),
+        reorderPoint: body.reorderPoint === undefined ? undefined : Number(body.reorderPoint),
+      });
+      res.json({ ok: true, product });
+    } catch (error) {
+      res.status(400).json({ ok: false, error: (error as Error).message });
+    }
+  });
+
+  app.get("/api/manual/orders", guardOrigin, limiter, async (_req, res) => {
+    try {
+      const page = await asManual().getOrders({ limit: 50 });
+      res.json(page);
+    } catch (error) {
+      res.status(400).json({ items: [], error: (error as Error).message });
+    }
+  });
+
+  app.post("/api/manual/orders", guardOrigin, limiter, (req, res) => {
+    try {
+      const body = req.body as Record<string, unknown>;
+      const rawItems = Array.isArray(body.items) ? body.items : [];
+      const items = rawItems.map((item) => {
+        const entry = item as Record<string, unknown>;
+        return {
+          sku: String(entry.sku ?? ""),
+          quantity: Number(entry.quantity ?? 1),
+          ...(entry.unitPrice === undefined ? {} : { unitPrice: Number(entry.unitPrice) }),
+        };
+      });
+      const order = asManual().createOrder({
+        customerName: String(body.customerName ?? ""),
+        customerPhone: body.customerPhone === undefined ? undefined : String(body.customerPhone),
+        customerEmail: body.customerEmail === undefined ? undefined : String(body.customerEmail),
+        items,
+      });
+      res.json({ ok: true, order });
+    } catch (error) {
+      res.status(400).json({ ok: false, error: (error as Error).message });
     }
   });
 

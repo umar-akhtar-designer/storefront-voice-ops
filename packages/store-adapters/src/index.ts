@@ -5,6 +5,16 @@ export {
 } from "./contract.js";
 export * from "./errors.js";
 export {
+  CustomAdapter,
+  createCustomAdapter,
+  mapCustomOrder,
+  mapCustomProduct,
+  mapStatus as mapCustomStatus,
+  type CustomAdapterOptions,
+  type CustomOrderNode,
+  type CustomProductNode,
+} from "./custom.js";
+export {
   ShopifyAdapter,
   DEFAULT_REORDER_POINT,
   createShopifyAdapter,

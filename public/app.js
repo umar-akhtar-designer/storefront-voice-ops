@@ -313,5 +313,193 @@
   );
   void detectDemoMode();
   void refreshState();
+  void refreshProfiles();
   setInterval(refreshState, 15000);
+
+  /* ======================= Multi-store profiles ======================= */
+  const profileSelect = document.getElementById("profile-select");
+  const addStoreBtn = document.getElementById("add-store");
+  const addStoreDialog = document.getElementById("add-store-dialog");
+  const addStoreForm = document.getElementById("add-store-form");
+  const manualEntry = document.getElementById("manual-entry");
+
+  async function refreshProfiles() {
+    try {
+      const res = await fetch("/api/profiles");
+      if (!res.ok) return;
+      const data = await res.json();
+      profileSelect.innerHTML = "";
+      for (const p of data.profiles) {
+        const opt = document.createElement("option");
+        opt.value = String(p.id);
+        opt.textContent = `${p.name}${p.active ? " ✓" : ""}`;
+        opt.dataset.provider = p.provider;
+        if (p.active) {
+          opt.selected = true;
+          manualEntry.hidden = p.provider !== "manual";
+        }
+        profileSelect.appendChild(opt);
+      }
+    } catch {
+      /* the selector simply stays on its placeholder */
+    }
+  }
+
+  profileSelect.addEventListener("change", async () => {
+    const id = Number(profileSelect.value);
+    if (!Number.isInteger(id)) return;
+    try {
+      const res = await fetch("/api/profiles/activate", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        alert(data.error || "Could not switch store.");
+        return;
+      }
+      profileSelect.innerHTML = "";
+      await Promise.all([refreshProfiles(), refreshState()]);
+    } catch {
+      alert("Network error while switching store.");
+    }
+  });
+
+  addStoreBtn.addEventListener("click", () => {
+    addStoreDialog.hidden = false;
+  });
+  document.getElementById("add-store-cancel").addEventListener("click", () => {
+    addStoreDialog.hidden = true;
+  });
+
+  const providerFields = {
+    woocommerce: ["s-baseurl", "s-key", "s-secret"],
+    custom: ["s-baseurl", "s-key"],
+    shopify: ["s-domain", "s-token"],
+    manual: [],
+    mock: [],
+  };
+  document.getElementById("s-provider").addEventListener("change", (e) => {
+    const fields = providerFields[e.target.value] ?? [];
+    for (const id of ["s-baseurl", "s-key", "s-secret", "s-domain", "s-token"]) {
+      document.getElementById(id).hidden = !fields.includes(id);
+    }
+  });
+
+  addStoreForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const provider = document.getElementById("s-provider").value;
+    const settings = {
+      baseUrl: document.getElementById("s-baseurl").value.trim() || undefined,
+      key: document.getElementById("s-key").value.trim() || undefined,
+      secret: document.getElementById("s-secret").value.trim() || undefined,
+      domain: document.getElementById("s-domain").value.trim() || undefined,
+      token: document.getElementById("s-token").value.trim() || undefined,
+      currency: document.getElementById("s-currency").value.trim().toUpperCase() || undefined,
+    };
+    try {
+      const res = await fetch("/api/profiles", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          name: document.getElementById("s-name").value.trim(),
+          provider,
+          settings,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        alert(data.error || "Could not save the store.");
+        return;
+      }
+      addStoreDialog.hidden = true;
+      addStoreForm.reset();
+      const suffix = data.reachable ? "" :
+        " (saved, but the store did not answer — check the credentials/local server)";
+      addMessage("assistant", `Connected “${data.profile.name}”.${suffix}`);
+      speak(`Connected ${data.profile.name}`);
+      let activated = false;
+      try {
+        const actRes = await fetch("/api/profiles/activate", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ id: data.profile.id }),
+        });
+        activated = actRes.ok;
+      } catch {
+        activated = false;
+      }
+      profileSelect.innerHTML = "";
+      await Promise.all([refreshProfiles(), refreshState()]);
+      if (!activated) alert(`Saved. Tap the store picker to switch to ${data.profile.name}.`);
+    } catch {
+      alert("Network error while saving the store.");
+    }
+  });
+
+  /* ================= Manual seller entry (no-website stores) ================= */
+  document.getElementById("manual-product-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch("/api/manual/products", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          sku: document.getElementById("m-sku").value.trim(),
+          name: document.getElementById("m-name").value.trim(),
+          stock: Number(document.getElementById("m-stock").value || 0),
+          price: Number(document.getElementById("m-price").value || 0),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        alert(data.error || "Could not save the product.");
+        return;
+      }
+      addMessage("assistant", `Saved product ${data.product.sku} — ${data.product.stock} in stock.`);
+      speak(`Saved ${data.product.name}`);
+      e.target.reset();
+      void refreshState();
+    } catch {
+      alert("Network error while saving the product.");
+    }
+  });
+
+  document.getElementById("manual-order-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch("/api/manual/orders", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          customerName: document.getElementById("o-customer").value.trim(),
+          customerPhone: document.getElementById("o-phone").value.trim() || undefined,
+          items: [
+            {
+              sku: document.getElementById("o-item-sku").value.trim(),
+              quantity: Number(document.getElementById("o-qty").value || 1),
+              ...(document.getElementById("o-price").value
+                ? { unitPrice: Number(document.getElementById("o-price").value) }
+                : {}),
+            },
+          ],
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        alert(data.error || "Could not record the order.");
+        return;
+      }
+      addMessage(
+        "assistant",
+        `Recorded order ${data.order.id} for ${data.order.customerName} — ${data.order.total.currency} ${data.order.total.amount}. It shows under “Orders to ship”.`,
+      );
+      speak(`Order for ${data.order.customerName} recorded`);
+      e.target.reset();
+      void refreshState();
+    } catch {
+      alert("Network error while recording the order.");
+    }
+  });
 })();

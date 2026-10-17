@@ -43,7 +43,7 @@ const EnvSchema = z.object({
   RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(120),
   REQUEST_BODY_LIMIT: z.string().default("256kb"),
 
-  STORE_PROVIDER: z.enum(["mock", "shopify", "woocommerce"]).default("mock"),
+  STORE_PROVIDER: z.enum(["mock", "shopify", "woocommerce", "custom"]).default("mock"),
   SHOPIFY_STORE_DOMAIN: z.string().optional().default(""),
   SHOPIFY_ADMIN_TOKEN: z.string().optional().default(""),
   SHOPIFY_API_VERSION: z.string().default("2026-01"),
@@ -56,6 +56,14 @@ const EnvSchema = z.object({
   WOO_BASE_URL: z.string().optional().default(""),
   WOO_KEY: z.string().optional().default(""),
   WOO_SECRET: z.string().optional().default(""),
+  /** Self-hosted stores exposing the JSON API from docs/custom-store-php-kit. */
+  CUSTOM_BASE_URL: z.string().optional().default(""),
+  CUSTOM_API_KEY: z.string().optional().default(""),
+  CUSTOM_CURRENCY: z
+    .string()
+    .regex(/^[A-Z]{3}$/)
+    .optional()
+    .default(""),
 
   DB_PATH: z.string().default("./data/storefront.sqlite"),
 
