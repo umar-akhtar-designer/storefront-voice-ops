@@ -18,6 +18,6 @@
     "declaration": false,
     "sourceMap": true
   },
-  "include": ["src", "test"],
+  "include": ["src", "test", "eval"],
   "exclude": ["node_modules", "dist", "test/e2e"]
 }

@@ -58,11 +58,26 @@ Living project status for **Storefront Voice Ops**. Updated at the end of every 
 - **Verified**: typecheck, lint, format, **86 tests** (11 files), build. Container build not verified
   (no Docker daemon in the agent environment — see `HUMAN_TASKS.md`).
 
+### Stage 3 — Bedrock intelligence layer
+
+- `AiService` implemented in `src/ai/`: `bedrock.ts` (Converse API, per-method system prompts,
+  optional Bedrock Guardrails) and `offline.ts` (deterministic templates). `createAiService()` picks
+  based on `USE_BEDROCK`; every Bedrock call degrades to the offline template on any error.
+- The service is wired into the MCP context (`ServerDeps.ai`), so briefing/weekly-report tools and
+  both draft tools rephrase with Bedrock when enabled.
+- **Guardrails** (`src/ai/guardrails.ts`): sanitize/wrap untrusted store data, injection heuristic,
+  shared system rule — defense in depth on top of the confirmation gate.
+- **Eval set** in `eval/` (`cases.ts`, `run.ts`, `ai-eval.ts`) with `npm run eval`; 8 cases assert
+  voice length, no markdown, required facts, and injection resistance. Runs against Bedrock when
+  `USE_BEDROCK=1`.
+- Docs: `architecture.md`, `security.md`, `README.md` updated.
+- **Verified**: typecheck, lint, format, **104 tests** (14 files), `npm run eval` 8/8, build.
+
 ## In progress
 
 - Stage 6 is code-complete; the real deploy is blocked on an AWS account and a domain. Next:
-  Stage 3 (Bedrock), Stage 5 (simulator UI + Playwright), Stage 4 (adapters), Stage 7
-  (docs/open-source), Stage 8 (submission).
+  Stage 5 (simulator UI + Playwright), Stage 4 (adapters), Stage 7 (docs/open-source), Stage 8
+  (submission).
 
 ## Blocked / waiting on a human
 

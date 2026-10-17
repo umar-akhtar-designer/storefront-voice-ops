@@ -23,6 +23,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:smoke": "tsx test/smoke.ts",
+    "eval": "tsx eval/ai-eval.ts",
     "inspect": "mcp-inspector"
   },
   "keywords": [

@@ -45,7 +45,7 @@ MCP server (src/mcp/buildServer.ts, one instance per session)
 5. The action is marked `confirmed` and both the confirmation and the execution are written to the
    audit log. A second confirm is idempotent and does not re-run.
 
-## Current state (Stage 2)
+## Current state (Stage 6)
 
 - Config (`src/config.ts`) validates the whole environment with Zod at startup.
 - Health endpoints and structured logging (pino) with PII redaction are in place.
@@ -56,10 +56,15 @@ MCP server (src/mcp/buildServer.ts, one instance per session)
   (`src/mcp/`, see `docs/tool-reference.md`).
 - **Stateful sessions** so confirmation survives across calls (ADR-0005).
 - `src/voice.ts` formats money, ids, and lists for speech.
+- **AI layer** (`src/ai/`): `AiService` with a Bedrock implementation (`bedrock.ts`) and an offline
+  template implementation (`offline.ts`); `createAiService()` picks between them. Guardrails
+  (`guardrails.ts`) sanitize and wrap untrusted store data; an eval set lives in `eval/`
+  (`npm run eval`).
+- **Deployment** (`deploy/`): Docker, ECS Fargate task definition, and a gated GitHub Actions
+  deploy workflow; `DEMO_MODE` exposes a reset endpoint for the public (mock) demo.
 
 ## Planned (see `STATUS.md`)
 
-- Stage 3: Bedrock intelligence layer (`AiService` on the Converse API, guardrails, eval set).
-- Stage 4: Shopify and WooCommerce adapters.
 - Stage 5: simulator UI.
-- Stage 6+: AWS deployment, docs, open-source package split.
+- Stage 4: Shopify and WooCommerce adapters.
+- Stage 7: open-source package split and docs polish.

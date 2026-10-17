@@ -22,6 +22,8 @@ import { originGuard } from "./safety/origin.js";
 import { rateLimiter } from "./safety/rateLimit.js";
 import { createStoreAdapter } from "./adapters/factory.js";
 import type { StoreAdapter } from "./adapters/types.js";
+import { createAiService } from "./ai/index.js";
+import type { AiService } from "./ai/types.js";
 
 const publicDir = path.resolve(process.cwd(), "public");
 
@@ -29,6 +31,7 @@ export interface Services {
   adapter: StoreAdapter;
   confirm: ConfirmationService;
   audit: AuditLogger;
+  ai: AiService;
 }
 
 let services: Services | undefined;
@@ -44,7 +47,7 @@ export function getServices(): Services {
     const confirm = new ConfirmationService(new PendingActionRepository(db), audit, {
       ttlSeconds: config.CONFIRM_TTL_SECONDS,
     });
-    services = { adapter: createStoreAdapter(), confirm, audit };
+    services = { adapter: createStoreAdapter(), confirm, audit, ai: createAiService() };
   }
   return services;
 }
@@ -54,6 +57,7 @@ function baseDeps(current: Services): ServerDeps {
     adapter: current.adapter,
     confirm: current.confirm,
     audit: current.audit,
+    ai: current.ai,
     now: () => new Date(),
     canonicalUri: config.MCP_CANONICAL_URI,
   };

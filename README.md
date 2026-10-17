@@ -36,8 +36,8 @@ npm run dev      # http://localhost:3000  MCP endpoint: /mcp
 - Proof that the track technology is really used in code:
   - MCP server entry point: `src/server.ts`
   - Tool registration: `src/mcp/` (tools/resources/prompts)
-  - Bedrock integration: `src/bedrock.ts` (wrapped by `src/ai/` in Stage 3)
-  - Reusable adapter package: `packages/store-adapters/`
+  - Bedrock integration: `src/ai/bedrock.ts`
+  - Reusable adapter package: `src/adapters/` (publishable as `packages/store-adapters/` in Stage 7)
 
 ## Architecture
 
@@ -82,6 +82,7 @@ cp .env.example .env
 npm run dev          # start the server (http://localhost:3000)
 npm test             # unit + contract tests (Vitest)
 npm run test:smoke   # MCP client smoke test against a running server
+npm run eval         # AI eval set (offline; USE_BEDROCK=1 to run against the model)
 npm run typecheck    # TypeScript
 npm run lint         # ESLint
 ```

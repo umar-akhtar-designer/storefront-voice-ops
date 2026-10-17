@@ -8,7 +8,7 @@
 - Store data (product names, customer notes) and model output are **untrusted** and must never be
   treated as instructions.
 
-## Implemented (Stage 2)
+## Implemented
 
 - All environment configuration is validated with Zod at startup (`src/config.ts`).
 - Structured logs via pino with redaction of `authorization`, cookies, tokens, secrets, emails,
@@ -32,11 +32,15 @@
   (`src/safety/audit.ts`, `audit_log` table).
 - **Fail-closed sessions**: non-initialize requests without a session id return `400`; unknown
   session ids return `404`; unsupported methods return `405`.
+- **Prompt-injection defense** (`src/ai/guardrails.ts`): store data is sanitized, wrapped in labelled
+  `<data>` delimiters, and flagged with a heuristic when it looks like an instruction; the AI system
+  prompt repeats that it is data, not instructions. The real backstop is that every write stays
+  confirmation-gated even if a model is manipulated.
+- **Demo reset is opt-in**: `POST /api/demo/reset` only exists when `DEMO_MODE=1`, sits behind the
+  origin guard and rate limiter, and is for the disposable mock dataset only.
 
 ## Planned (Stage 3+)
 
-- **Prompt-injection defense**: store data is data; write tools stay confirmation-gated even if a
-  model is manipulated (see `src/ai/guardrails.ts` in Stage 3).
 - **Bedrock Guardrails** wiring for the briefing/draft prompts.
 - Real OAuth 2.1 authorization server and per-merchant credential mapping for `linked` mode.
 
