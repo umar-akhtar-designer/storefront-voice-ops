@@ -9,7 +9,7 @@ import {
   type ShopifyCustomerNode,
   type ShopifyOrderNode,
   type ShopifyVariantNode,
-} from "../../../src/adapters/shopify.js";
+} from "@voice-ops/store-adapters";
 
 const ORDER_NODE: ShopifyOrderNode = {
   id: "gid://shopify/Order/9001",

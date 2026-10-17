@@ -1,4 +1,3 @@
-import { config } from "../config.js";
 import { NotFoundError, ValidationError } from "./errors.js";
 import { requestJson, type FetchLike } from "./http.js";
 import type {
@@ -16,6 +15,8 @@ import type {
   TopSeller,
 } from "./types.js";
 import { DEFAULT_REORDER_POINT } from "./shopify.js";
+
+const envString = (name: string): string => process.env[name] ?? "";
 
 /**
  * WooCommerce adapter (REST API v3). All WooCommerce-specific shapes are mapped onto the shared
@@ -156,9 +157,9 @@ export class WooCommerceAdapter implements StoreAdapter {
   private readonly retries: number;
 
   constructor(options: WooCommerceAdapterOptions = {}) {
-    const rawBase = options.baseUrl ?? config.WOO_BASE_URL;
-    const key = options.key ?? config.WOO_KEY;
-    const secret = options.secret ?? config.WOO_SECRET;
+    const rawBase = options.baseUrl ?? envString("WOO_BASE_URL");
+    const key = options.key ?? envString("WOO_KEY");
+    const secret = options.secret ?? envString("WOO_SECRET");
     if (!rawBase) throw new Error("WOO_BASE_URL is required for the WooCommerce provider");
     if (!key || !secret)
       throw new Error("WOO_KEY and WOO_SECRET are required for the WooCommerce provider");

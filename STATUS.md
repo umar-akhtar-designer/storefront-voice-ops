@@ -106,9 +106,24 @@ Living project status for **Storefront Voice Ops**. Updated at the end of every 
   error mapping, credential guards) are unit-tested with a fake fetch. **136 tests** (17 files).
 - Docs: README (connecting a real store), architecture.
 
+### Stage 7 — open-source adapter package
+
+- Adapter code moved to a real npm workspace: `packages/store-adapters` → **`@voice-ops/store-adapters`**
+  (`StoreAdapter` types, typed errors, shared HTTP layer, `MockAdapter`, `ShopifyAdapter`,
+  `WooCommerceAdapter`, `defineAdapterContract` barrel export, own tsconfig/package.json/README). The
+  app now consumes it as a dependency (`src/adapters/factory.ts` keeps provider selection).
+- Adapters no longer import app config; they take explicit options and fall back to the documented
+  env vars when standalone (`SHOPIFY_*`, `WOO_*`), so the package is publishable on its own.
+- Build wiring: the package compiles itself (tsconfig with declarations); root `typecheck` builds it
+  first, `npm install` runs a `prepare`-style build, and the Dockerfile copies `packages/` into the
+  CI build stage. Lint/format/coverage include the package; emitted `dist` is ignored.
+- All 136 tests, the e2e suite, and the production `npm start` (compiled dist) verified against the
+  package's built output.
+- Docs: ADR-0002 updated (split done), README hackathon/architecture sections, architecture diagram.
+
 ## In progress
 
-- Stages 6 and 5 are code-complete. Next: Stage 7 (docs/open-source), Stage 8 (submission).
+- Stages 6, 5 and 4 are code-complete. Next: Stage 8 (submission).
 
 ## Blocked / waiting on a human
 
@@ -134,5 +149,5 @@ See `docs/adr/`. Notable decisions so far:
 - Confirmation gate with tiered spoken codes for destructive/large actions — ADR-0003.
 - Stateful MCP sessions keyed by `mcp-session-id`, confirmation persisted in SQLite — ADR-0005
   (supersedes the stateless note in ADR-0001).
-- Adapter code lives in `src/adapters/`; the publishable `packages/store-adapters` split is scheduled
-  for the open-source phase (Stage 7).
+- Adapter code lives in `packages/store-adapters/` and is published as `@voice-ops/store-adapters`
+  (open-source phase, Stage 7).

@@ -5,7 +5,7 @@ import {
   UnauthorizedError,
   UpstreamError,
   ValidationError,
-} from "../../../src/adapters/errors.js";
+} from "@voice-ops/store-adapters";
 
 describe("typed store errors", () => {
   it("exposes stable codes and names", () => {

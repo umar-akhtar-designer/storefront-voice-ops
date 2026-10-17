@@ -22,5 +22,7 @@ Provider errors are mapped to typed errors (`NotFoundError`, `RateLimitedError`,
 ## Consequences
 
 - Tools stay platform-agnostic and get strong, uniform test coverage.
-- The adapter code will later move to the publishable `packages/store-adapters` package (Stage 7)
-  to serve the Open Source mini challenge.
+- The adapter code lives in the publishable `packages/store-adapters` npm workspace package
+  (`@voice-ops/store-adapters`), in line with the Open Source mini challenge; the app imports it as
+  a plain dependency and the shared adapter contract ships with it so third-party integrations are
+  contract-tested too.

@@ -1,6 +1,6 @@
 import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import type { ServerNotification, ServerRequest } from "@modelcontextprotocol/sdk/types.js";
-import type { StoreAdapter } from "../adapters/types.js";
+import type { StoreAdapter } from "@voice-ops/store-adapters";
 import type { AiService } from "../ai/types.js";
 import type { AuditLogger } from "../safety/audit.js";
 import type { ConfirmationService } from "../safety/confirm.js";

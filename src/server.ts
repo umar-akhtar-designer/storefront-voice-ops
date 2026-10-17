@@ -21,7 +21,7 @@ import { createAuthMiddleware } from "./safety/auth.js";
 import { originGuard } from "./safety/origin.js";
 import { rateLimiter } from "./safety/rateLimit.js";
 import { createStoreAdapter } from "./adapters/factory.js";
-import type { StoreAdapter } from "./adapters/types.js";
+import type { StoreAdapter } from "@voice-ops/store-adapters";
 import { createAiService } from "./ai/index.js";
 import type { AiService } from "./ai/types.js";
 

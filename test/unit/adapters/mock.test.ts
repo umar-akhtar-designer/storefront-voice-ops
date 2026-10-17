@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { MockAdapter } from "../../../src/adapters/mock.js";
-import { defineAdapterContract } from "../../../src/adapters/contract.js";
+import { MockAdapter } from "@voice-ops/store-adapters";
+import { defineAdapterContract } from "@voice-ops/store-adapters";
 
 // Every adapter must satisfy the shared contract.
 defineAdapterContract("MockAdapter", (options) => new MockAdapter(options));

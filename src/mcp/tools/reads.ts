@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import type { StoreAdapter } from "../../adapters/types.js";
+import type { StoreAdapter } from "@voice-ops/store-adapters";
 import type { ServerDeps } from "../context.js";
 import { contextFor } from "../context.js";
 import { fail, ok, spokenError } from "../result.js";

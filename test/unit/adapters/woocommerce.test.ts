@@ -1,11 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { defineAdapterContract } from "../../../src/adapters/contract.js";
-import { WooCommerceAdapter } from "../../../src/adapters/woocommerce.js";
-import type {
-  WooCustomerNode,
-  WooOrderNode,
-  WooProductNode,
-} from "../../../src/adapters/woocommerce.js";
+import { defineAdapterContract } from "@voice-ops/store-adapters";
+import { WooCommerceAdapter } from "@voice-ops/store-adapters";
+import type { WooCustomerNode, WooOrderNode, WooProductNode } from "@voice-ops/store-adapters";
 
 /**
  * An in-memory WooCommerce REST endpoint. It implements just enough of the WordPress REST API (the

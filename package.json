@@ -7,14 +7,18 @@
   "engines": {
     "node": ">=22"
   },
+  "workspaces": [
+    "packages/*"
+  ],
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx src/server.ts",
     "dev:watch": "tsx watch src/server.ts",
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
     "build": "npm run clean && tsc -p tsconfig.build.json && node scripts/copy-assets.mjs",
+    "build:packages": "npm run build --workspace @voice-ops/store-adapters",
     "start": "node dist/server.js",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "npm run build:packages && tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",

@@ -1,0 +1,47 @@
+{
+  "name": "@voice-ops/store-adapters",
+  "version": "1.0.0",
+  "description": "Open-source StoreAdapter contract plus mock, Shopify (Admin GraphQL), and WooCommerce (REST v3) adapters for the storefront-voice-ops MCP server.",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\""
+  },
+  "peerDependencies": {
+    "vitest": ">=1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "vitest": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "typescript": "6.0.3"
+  },
+  "keywords": [
+    "shopify",
+    "woocommerce",
+    "ecommerce",
+    "store-adapter",
+    "mcp"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/owner/storefront-voice-ops.git",
+    "directory": "packages/store-adapters"
+  }
+}

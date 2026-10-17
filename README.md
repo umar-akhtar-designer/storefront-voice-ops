@@ -40,7 +40,10 @@ inspect every tool call. It reaches the MCP server over the real protocol.
   - MCP server entry point: `src/server.ts`
   - Tool registration: `src/mcp/` (tools/resources/prompts)
   - Bedrock integration: `src/ai/bedrock.ts`
-  - Reusable adapter package: `src/adapters/` (publishable as `packages/store-adapters/` in Stage 7)
+  - Reusable adapter package: `packages/store-adapters/` (`@voice-ops/store-adapters`) — the
+    `StoreAdapter` contract, mock, Shopify (Admin GraphQL), and WooCommerce (REST v3) adapters ship
+    as a standalone, publishable npm workspace with its own README and the shared
+    `defineAdapterContract` test suite.
 
 ## Architecture
 

@@ -1,4 +1,3 @@
-import { config } from "../config.js";
 import { NotFoundError, UpstreamError, ValidationError } from "./errors.js";
 import { assertGraphQl, requestJson, type FetchLike, type GraphQlResponse } from "./http.js";
 import type {
@@ -16,13 +15,16 @@ import type {
   TopSeller,
 } from "./types.js";
 
+const envString = (name: string): string => process.env[name] ?? "";
+
 /**
  * Shopify adapter (Admin GraphQL API). All Shopify-specific shapes are mapped onto the shared
  * StoreAdapter contract in the exported `mapShopify*` helpers so mapping is unit-testable without a
  * live store.
  *
- * Reorder points are not a first-class Shopify concept: we read an optional `custom.reorder_point`
- * metafield and fall back to {@link DEFAULT_REORDER_POINT}.
+ * Reorder points are not a first-class Shopify concept: we fall back to
+ * {@link DEFAULT_REORDER_POINT} (a future revision can lift them from a `custom.reorder_point`
+ * metafield).
  */
 
 export const DEFAULT_REORDER_POINT = 5;
@@ -298,9 +300,9 @@ export class ShopifyAdapter implements StoreAdapter {
   private readonly retries: number;
 
   constructor(options: ShopifyAdapterOptions = {}) {
-    this.domain = options.domain ?? config.SHOPIFY_STORE_DOMAIN;
-    this.token = options.token ?? config.SHOPIFY_ADMIN_TOKEN;
-    this.apiVersion = options.apiVersion ?? config.SHOPIFY_API_VERSION;
+    this.domain = options.domain ?? envString("SHOPIFY_STORE_DOMAIN");
+    this.token = options.token ?? envString("SHOPIFY_ADMIN_TOKEN");
+    this.apiVersion = options.apiVersion ?? (envString("SHOPIFY_API_VERSION") || "2026-01");
     this.currency = options.currency ?? "USD";
     this.fetchImpl = options.fetch ?? fetch;
     this.timeoutMs = options.timeoutMs ?? 15_000;

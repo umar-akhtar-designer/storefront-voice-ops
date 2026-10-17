@@ -7,6 +7,7 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends python3 make g++ \
   && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
+COPY packages ./packages
 RUN npm ci
 COPY tsconfig.json ./
 COPY src ./src

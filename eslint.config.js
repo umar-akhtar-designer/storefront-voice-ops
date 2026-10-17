@@ -3,7 +3,16 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["dist", "node_modules", "coverage", "data", "public/**", "infra/**", "test-results"],
+    ignores: [
+      "dist",
+      "packages/store-adapters/dist",
+      "node_modules",
+      "coverage",
+      "data",
+      "public/**",
+      "infra/**",
+      "test-results",
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

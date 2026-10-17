@@ -22,7 +22,7 @@ MCP server (src/mcp/buildServer.ts, one instance per session)
   - prompts (src/mcp/prompts.ts)
   - context  (src/mcp/context.ts)   adapter + confirm + audit + ai, per-session actor/sessionId
       |
-      +--> StoreAdapter (src/adapters/)
+      +--> StoreAdapter (packages/store-adapters/, published as @voice-ops/store-adapters)
       |      |-- MockAdapter        deterministic demo + tests
       |      |-- ShopifyAdapter     GraphQL Admin API
       |      |-- WooCommerceAdapter REST v3
