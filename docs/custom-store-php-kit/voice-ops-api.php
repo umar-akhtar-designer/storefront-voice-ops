@@ -132,7 +132,9 @@ function map_product(array $r): array {
 define('CURRENCY_CODE', 'PKR'); // ← change if the store sells in another currency
 
 /* ------------------------- route handling ------------------------------- */
-$secret = $_SERVER['HTTP_X_API_KEY'] ?? '';
+/* Accept the secret EITHER as the x-api-key header (how the operator app sends
+ * it) OR as ?key=... in the URL (so you can test in a normal browser). */
+$secret = $_SERVER['HTTP_X_API_KEY'] ?? ($_GET['key'] ?? '');
 if (!hash_equals(API_KEY, $secret)) {
     json_out(401, ['error' => 'Missing or wrong x-api-key header']);
 }

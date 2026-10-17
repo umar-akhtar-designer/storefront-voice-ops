@@ -42,6 +42,9 @@ and restock. Nothing public on your website changes.
 | `GET  .../tables` | setup diagnostic (key-protected) |
 
 Every call needs the header `x-api-key: <your key>`; sends/receives JSON.
+**Browser testing shortcut:** GET requests can instead put the key in the URL,
+e.g. `.../voice-ops-api.php/tables?key=YOUR-KEY` — same security, easier for a
+one-off check. (POST calls still need the header.)
 
 ## Notes
 
