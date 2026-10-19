@@ -323,6 +323,32 @@
   const addStoreForm = document.getElementById("add-store-form");
   const manualEntry = document.getElementById("manual-entry");
 
+  /** Cross-browser styled toast (no alert popups), auto-dismisses after 4s. */
+  function toast(message, kind) {
+    let stack = document.getElementById("toast-stack");
+    if (!stack) {
+      stack = document.createElement("div");
+      stack.id = "toast-stack";
+      document.body.appendChild(stack);
+    }
+    const el = document.createElement("div");
+    el.className = `toast toast-${kind || "info"}`;
+    el.setAttribute("role", "status");
+    const icon = document.createElement("span");
+    icon.className = "toast-icon";
+    icon.textContent = kind === "success" ? "✓" : kind === "error" ? "!" : "i";
+    const text = document.createElement("span");
+    text.textContent = message;
+    el.append(icon, text);
+    const dismiss = () => {
+      el.classList.add("toast-out");
+      setTimeout(() => el.remove(), 220);
+    };
+    el.addEventListener("click", dismiss);
+    stack.appendChild(el);
+    setTimeout(dismiss, 4000);
+  }
+
   async function refreshProfiles() {
     try {
       const res = await fetch("/api/profiles");
@@ -356,13 +382,13 @@
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        alert(data.error || "Could not switch store.");
+        toast(data.error || "Could not switch store.", "error");
         return;
       }
       profileSelect.innerHTML = "";
       await Promise.all([refreshProfiles(), refreshState()]);
     } catch {
-      alert("Network error while switching store.");
+      toast("Network error while switching store.", "error");
     }
   });
 
@@ -410,7 +436,7 @@
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        alert(data.error || "Could not save the store.");
+        toast(data.error || "Could not save the store.", "error");
         return;
       }
       addStoreDialog.hidden = true;
@@ -432,9 +458,9 @@
       }
       profileSelect.innerHTML = "";
       await Promise.all([refreshProfiles(), refreshState()]);
-      if (!activated) alert(`Saved. Tap the store picker to switch to ${data.profile.name}.`);
+      if (!activated) toast(`Saved. Tap the store picker to switch to ${data.profile.name}.`, "success");
     } catch {
-      alert("Network error while saving the store.");
+      toast("Network error while saving the store.", "error");
     }
   });
 
@@ -454,7 +480,7 @@
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        alert(data.error || "Could not save the product.");
+        toast(data.error || "Could not save the product.", "error");
         return;
       }
       addMessage("assistant", `Saved product ${data.product.sku} — ${data.product.stock} in stock.`);
@@ -462,7 +488,7 @@
       e.target.reset();
       void refreshState();
     } catch {
-      alert("Network error while saving the product.");
+      toast("Network error while saving the product.", "error");
     }
   });
 
@@ -488,7 +514,7 @@
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        alert(data.error || "Could not record the order.");
+        toast(data.error || "Could not record the order.", "error");
         return;
       }
       addMessage(
@@ -499,7 +525,7 @@
       e.target.reset();
       void refreshState();
     } catch {
-      alert("Network error while recording the order.");
+      toast("Network error while recording the order.", "error");
     }
   });
 })();
