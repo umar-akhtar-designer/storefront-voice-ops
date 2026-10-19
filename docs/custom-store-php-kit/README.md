@@ -11,7 +11,7 @@ and restock. Nothing public on your website changes.
 1. **Upload the file** — Hostinger panel → File Manager → open `public_html`
    → create folder `voice-api` → upload `voice-ops-api.php` into it.
 2. **Database config** — open the file in the editor and fill the `DATABASE
-   CONFIG` block at the top:
+CONFIG` block at the top:
    - `DB_NAME`, `DB_USER`, `DB_PASS` — copy the same values your site already
      uses (they are in your site's existing config file, e.g. `config.php` /
      `db.php`, or in Hostinger → Databases list).
@@ -30,16 +30,16 @@ and restock. Nothing public on your website changes.
 
 ## What the app will call
 
-| Call | Effect |
-|------|--------|
-| `GET  .../orders?status=pending&limit=20` | latest pending orders |
-| `GET  .../orders/1002` | one order by number |
-| `GET  .../products?lowStockBelow=10` | products at/below a stock level |
-| `POST .../orders/1002/fulfill` `{"tracking":"TCS-77","carrier":"TCS"}` | mark shipped |
-| `POST .../orders/1002/cancel` `{"reason":"Customer changed mind"}` | cancel |
-| `POST .../products/SKU/restock` `{"quantity":20,"mode":"set"}` | set/add stock |
-| `GET  .../sales/today` | today's revenue (briefing power-up) |
-| `GET  .../tables` | setup diagnostic (key-protected) |
+| Call                                                                   | Effect                              |
+| ---------------------------------------------------------------------- | ----------------------------------- |
+| `GET  .../orders?status=pending&limit=20`                              | latest pending orders               |
+| `GET  .../orders/1002`                                                 | one order by number                 |
+| `GET  .../products?lowStockBelow=10`                                   | products at/below a stock level     |
+| `POST .../orders/1002/fulfill` `{"tracking":"TCS-77","carrier":"TCS"}` | mark shipped                        |
+| `POST .../orders/1002/cancel` `{"reason":"Customer changed mind"}`     | cancel                              |
+| `POST .../products/SKU/restock` `{"quantity":20,"mode":"set"}`         | set/add stock                       |
+| `GET  .../sales/today`                                                 | today's revenue (briefing power-up) |
+| `GET  .../tables`                                                      | setup diagnostic (key-protected)    |
 
 Every call needs the header `x-api-key: <your key>`; sends/receives JSON.
 **Browser testing shortcut:** GET requests can instead put the key in the URL,

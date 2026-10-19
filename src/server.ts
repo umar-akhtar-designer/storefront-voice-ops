@@ -81,7 +81,9 @@ function liveAdapter(current: Services): StoreAdapter {
     get(_target, prop) {
       const bound = profileManager.currentAdapter() as unknown as Record<string | symbol, unknown>;
       const value = bound[prop];
-      return typeof value === "function" ? (value as (...a: unknown[]) => unknown).bind(bound) : value;
+      return typeof value === "function"
+        ? (value as (...a: unknown[]) => unknown).bind(bound)
+        : value;
     },
   }) as unknown as StoreAdapter;
 }
@@ -349,8 +351,9 @@ export function createApp(): express.Express {
       .match(/\bord[- ]?[0-9a-f][0-9a-f-]{3,30}\b/i)?.[0]
       ?.replace(/\s+/g, "-")
       .toUpperCase();
-    const carrierWord = s
-      .match(/\b(?:with|via|by)\s+(tcs|leopards?|trax|post\s?ex|call\s?courier|swyft|m\s*&\s*p)\b/)?.[1];
+    const carrierWord = s.match(
+      /\b(?:with|via|by)\s+(tcs|leopards?|trax|post\s?ex|call\s?courier|swyft|m\s*&\s*p)\b/,
+    )?.[1];
     const carrier = carrierWord ? spokenCarrier(carrierWord) : undefined;
     const id = s.match(/\b(1\d{3})\b/)?.[1];
     const affirm = /^(yes|yep|yeah|yup|confirm|do it|proceed|go ahead|ok|okay|sure|right)\b/.test(
@@ -380,7 +383,8 @@ export function createApp(): express.Express {
       return { name: "get_weekly_report", args: {} };
     if (/top (seller|selling)|best (seller|selling)/.test(s))
       return { name: "get_top_sellers", args: { period: "week" } };
-    if (/cancel.*order/.test(s) && id) return { name: "cancel_order", args: { orderId: Number(id) } };
+    if (/cancel.*order/.test(s) && id)
+      return { name: "cancel_order", args: { orderId: Number(id) } };
     if (/(ship|dispatch|send out).*(order|parcel|package)/.test(s) && id) {
       return {
         name: "mark_order_shipped",
@@ -664,7 +668,11 @@ export function createApp(): express.Express {
         reachable = false;
         logger.warn({ err: error }, "profile creation probe failed");
       }
-      res.json({ ok: true, profile: { id: profile.id, name: profile.name, provider: profile.provider }, reachable });
+      res.json({
+        ok: true,
+        profile: { id: profile.id, name: profile.name, provider: profile.provider },
+        reachable,
+      });
     } catch (error) {
       logger.warn({ err: error }, "profile creation refused");
       res.status(400).json({ ok: false, error: (error as Error).message });

@@ -27,9 +27,7 @@ function fakeCustomFetch(state: FakeState) {
   ): Promise<Response> {
     const url = new URL(typeof input === "string" ? input : String(input));
     const method = (init?.method ?? "GET").toUpperCase();
-    const auth = String(
-      (init?.headers as Record<string, string>)?.["x-api-key"] ?? "",
-    );
+    const auth = String((init?.headers as Record<string, string>)?.["x-api-key"] ?? "");
     const body =
       typeof init?.body === "string" ? (JSON.parse(init.body) as Record<string, unknown>) : {};
     // Whatever folder prefix the hosting adds, route on what follows the script file itself.
@@ -37,7 +35,10 @@ function fakeCustomFetch(state: FakeState) {
     state.apiRequests.push({ method, path, auth });
 
     const reply = (data: unknown, status = 200) =>
-      new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json" } });
+      new Response(JSON.stringify(data), {
+        status,
+        headers: { "content-type": "application/json" },
+      });
 
     if (auth !== "key_kapraa_1") return reply({ error: "Missing or wrong x-api-key header" }, 401);
 
@@ -48,7 +49,9 @@ function fakeCustomFetch(state: FakeState) {
       const limit = Number(url.searchParams.get("limit")) || 20;
       let orders = state.orders;
       if (status) orders = orders.filter((order) => order.status === status);
-      const sorted = [...orders].sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+      const sorted = [...orders].sort((a, b) =>
+        String(b.createdAt).localeCompare(String(a.createdAt)),
+      );
       return reply({ items: sorted.slice(0, limit) });
     }
 
@@ -78,7 +81,9 @@ function fakeCustomFetch(state: FakeState) {
 
     if (path === "products" && method === "GET") {
       const below = url.searchParams.get("lowStockBelow");
-      const items = state.products.filter((p) => (below === null ? true : p.stock <= Number(below)));
+      const items = state.products.filter((p) =>
+        below === null ? true : p.stock <= Number(below),
+      );
       return reply({ items });
     }
 
@@ -102,9 +107,24 @@ function fixture(): FakeState {
   return {
     apiRequests: [],
     products: [
-      { sku: "PRD-HN74N3M4", name: "Bin Saeed Unstitched 3PC Khaddar Winter Collections", stock: 3, price: money(2650) },
-      { sku: "PRD-A3LTKFSF", name: "3 Piece - Gold Unstitched Red Embroidered Lawn Suit", stock: 0, price: money(5000) },
-      { sku: "PRD-359A24RT", name: "SAYA Volume 527 Summer Collection Unstitched 3PC Suit", stock: 12, price: money(2650) },
+      {
+        sku: "PRD-HN74N3M4",
+        name: "Bin Saeed Unstitched 3PC Khaddar Winter Collections",
+        stock: 3,
+        price: money(2650),
+      },
+      {
+        sku: "PRD-A3LTKFSF",
+        name: "3 Piece - Gold Unstitched Red Embroidered Lawn Suit",
+        stock: 0,
+        price: money(5000),
+      },
+      {
+        sku: "PRD-359A24RT",
+        name: "SAYA Volume 527 Summer Collection Unstitched 3PC Suit",
+        stock: 12,
+        price: money(2650),
+      },
     ],
     orders: [
       {
@@ -117,7 +137,14 @@ function fixture(): FakeState {
         customerEmail: "rizwana@example.com",
         trackingNumber: null,
         cancelledReason: null,
-        items: [{ sku: "1166", name: "Bin Saeed Unstitched 3PC Khaddar Winter Collections", quantity: 1, unitPrice: money(2650) }],
+        items: [
+          {
+            sku: "1166",
+            name: "Bin Saeed Unstitched 3PC Khaddar Winter Collections",
+            quantity: 1,
+            unitPrice: money(2650),
+          },
+        ],
       },
       {
         id: "ORD-2026-6AB8C46323267",
@@ -130,8 +157,18 @@ function fixture(): FakeState {
         trackingNumber: null,
         cancelledReason: null,
         items: [
-          { sku: "1209", name: "Nishat linen 3-Piece Unstitched Collection winter", quantity: 1, unitPrice: money(2850) },
-          { sku: "1213", name: "Nishat linen 3-Piece Unstitched Collection winter", quantity: 1, unitPrice: money(2850) },
+          {
+            sku: "1209",
+            name: "Nishat linen 3-Piece Unstitched Collection winter",
+            quantity: 1,
+            unitPrice: money(2850),
+          },
+          {
+            sku: "1213",
+            name: "Nishat linen 3-Piece Unstitched Collection winter",
+            quantity: 1,
+            unitPrice: money(2850),
+          },
         ],
       },
       {
@@ -168,7 +205,9 @@ function describeAdapterContract(): void {
 
 describe("CustomAdapter specifics", () => {
   it("requires base url and key", () => {
-    expect(() => new CustomAdapter({ baseUrl: "", apiKey: "k" })).toThrow("CUSTOM_STORE_URL is required");
+    expect(() => new CustomAdapter({ baseUrl: "", apiKey: "k" })).toThrow(
+      "CUSTOM_STORE_URL is required",
+    );
     expect(() => new CustomAdapter({ baseUrl: "https://x.example", apiKey: "" })).toThrow(
       "CUSTOM_API_KEY is required",
     );
@@ -218,7 +257,9 @@ describe("CustomAdapter specifics", () => {
     expect(order.customerId).toBe("(guest checkout)");
     expect(order.customerName).toBe("(guest checkout)");
     // A dispatch-style status the store invented still shows up as "pending" work.
-    expect(mapCustomOrder({ ...fixture().orders[1]!, status: "dispatched" }).status).toBe("pending");
+    expect(mapCustomOrder({ ...fixture().orders[1]!, status: "dispatched" }).status).toBe(
+      "pending",
+    );
   });
 
   it("adjusts stock via add for increases", async () => {

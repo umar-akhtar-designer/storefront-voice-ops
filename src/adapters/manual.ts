@@ -105,9 +105,10 @@ export class ManualAdapter implements StoreAdapter {
         .prepare("SELECT * FROM products WHERE stock <= ? ORDER BY stock ASC LIMIT 250")
         .all(filter.lowStockBelow) as Record<string, unknown>[];
     } else {
-      rows = this.db
-        .prepare("SELECT * FROM products ORDER BY name ASC LIMIT 250")
-        .all() as Record<string, unknown>[];
+      rows = this.db.prepare("SELECT * FROM products ORDER BY name ASC LIMIT 250").all() as Record<
+        string,
+        unknown
+      >[];
     }
     return rows.map(mapProductRow);
   }
@@ -133,7 +134,9 @@ export class ManualAdapter implements StoreAdapter {
   }
 
   upsertProduct(input: ManualProductInput): Product {
-    const sku = String(input.sku || "").trim().toUpperCase();
+    const sku = String(input.sku || "")
+      .trim()
+      .toUpperCase();
     if (!sku) throw new ValidationError("A product SKU is required");
     if (String(input.name || "").trim().length === 0) {
       throw new ValidationError("A product name is required");
@@ -248,10 +251,8 @@ export class ManualAdapter implements StoreAdapter {
       unitPrice: item.unitPrice ?? this.productPrice(item.sku),
     }));
     const name = input.customerName.trim();
-    const customerId =
-      input.customerPhone?.trim() || input.customerEmail?.trim() || name;
-    const total =
-      input.total ?? items.reduce((sum, item) => sum + item.unitPrice * item.qty, 0);
+    const customerId = input.customerPhone?.trim() || input.customerEmail?.trim() || name;
+    const total = input.total ?? items.reduce((sum, item) => sum + item.unitPrice * item.qty, 0);
     const createdAt = input.createdAt ?? new Date().toISOString();
 
     let orderId: string;
@@ -336,10 +337,13 @@ export class ManualAdapter implements StoreAdapter {
       const name = this.customerNameOf(row);
       return name.trim().toLowerCase() === needle;
     });
-    const pool = matches.length > 0 ? matches : rows.filter((row) => {
-      const name = this.customerNameOf(row).toLowerCase();
-      return name.length > 0 && name.includes(needle);
-    });
+    const pool =
+      matches.length > 0
+        ? matches
+        : rows.filter((row) => {
+            const name = this.customerNameOf(row).toLowerCase();
+            return name.length > 0 && name.includes(needle);
+          });
     if (pool.length === 0) return null;
     const orders = pool.map((row) => this.mapOrderRow(row));
     const newest = orders[0]!;
@@ -354,9 +358,8 @@ export class ManualAdapter implements StoreAdapter {
 
   /* ------------------------------------------------------------ internals */
   private findProduct(sku: string): Record<string, unknown> | undefined {
-    return this.db
-      .prepare("SELECT * FROM products WHERE sku = ?")
-      .get(sku.trim().toUpperCase()) as Record<string, unknown> | undefined;
+    return this.db.prepare("SELECT * FROM products WHERE sku = ?").get(sku.trim().toUpperCase()) as
+      Record<string, unknown> | undefined;
   }
 
   private productPrice(sku: string): number {
@@ -371,8 +374,7 @@ export class ManualAdapter implements StoreAdapter {
 
   private mustGetOrder(id: string): OrderRow {
     const row = this.db.prepare("SELECT * FROM orders WHERE id = ?").get(id) as
-      | OrderRow
-      | undefined;
+      OrderRow | undefined;
     if (!row) throw new NotFoundError(`Order ${id} not found`);
     return row;
   }

@@ -72,9 +72,33 @@ const orders = new Map([
 ]);
 
 const products = new Map([
-  ["LT-TABLE-FOLD", { sku: "LT-TABLE-FOLD", name: "Foldable Laptop Bed Table", stock: 3, price: { amount: 2750.0, currency: CURRENCY } }],
-  ["SOAP-DISP-2IN1", { sku: "SOAP-DISP-2IN1", name: "2-in-1 Kitchen Sink Soap Dispenser", stock: 10, price: { amount: 699.0, currency: CURRENCY } }],
-  ["COMB-OIL-ORG", { sku: "COMB-OIL-ORG", name: "Hair Oil Applicator Comb (Orange)", stock: 5, price: { amount: 1599.0, currency: CURRENCY } }],
+  [
+    "LT-TABLE-FOLD",
+    {
+      sku: "LT-TABLE-FOLD",
+      name: "Foldable Laptop Bed Table",
+      stock: 3,
+      price: { amount: 2750.0, currency: CURRENCY },
+    },
+  ],
+  [
+    "SOAP-DISP-2IN1",
+    {
+      sku: "SOAP-DISP-2IN1",
+      name: "2-in-1 Kitchen Sink Soap Dispenser",
+      stock: 10,
+      price: { amount: 699.0, currency: CURRENCY },
+    },
+  ],
+  [
+    "COMB-OIL-ORG",
+    {
+      sku: "COMB-OIL-ORG",
+      name: "Hair Oil Applicator Comb (Orange)",
+      stock: 5,
+      price: { amount: 1599.0, currency: CURRENCY },
+    },
+  ],
 ]);
 
 /* ------------------------------------------------------------- helpers --- */
@@ -126,7 +150,8 @@ async function route(req, res, url) {
   if (parts[0] === "orders" && parts[2] === "fulfill" && req.method === "POST") {
     const order = orders.get(parts[1]);
     if (!order) return json(res, 404, { error: `Order ${parts[1]} not found` });
-    if (order.status === "cancelled") return json(res, 409, { error: "Cannot fulfil a cancelled order" });
+    if (order.status === "cancelled")
+      return json(res, 409, { error: "Cannot fulfil a cancelled order" });
     const body = await readBody(req);
     order.status = "shipped";
     order.trackingNumber = String(body.tracking || `MANUAL-${Date.now()}`);
@@ -137,7 +162,8 @@ async function route(req, res, url) {
   if (parts[0] === "orders" && parts[2] === "cancel" && req.method === "POST") {
     const order = orders.get(parts[1]);
     if (!order) return json(res, 404, { error: `Order ${parts[1]} not found` });
-    if (order.status === "shipped") return json(res, 409, { error: "Shipped order cannot be cancelled" });
+    if (order.status === "shipped")
+      return json(res, 409, { error: "Shipped order cannot be cancelled" });
     const body = await readBody(req);
     order.status = "cancelled";
     order.cancelledReason = String(body.reason || "No reason given");
@@ -147,9 +173,7 @@ async function route(req, res, url) {
   // GET /products?lowStockBelow=10
   if (parts[0] === "products" && parts.length === 1 && req.method === "GET") {
     const below = url.searchParams.get("lowStockBelow");
-    const items = [...products.values()].filter(
-      (p) => below === null || p.stock <= Number(below),
-    );
+    const items = [...products.values()].filter((p) => below === null || p.stock <= Number(below));
     return json(res, 200, { items });
   }
 

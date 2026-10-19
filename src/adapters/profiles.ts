@@ -1,6 +1,4 @@
-import {
-  type StoreAdapter,
-} from "@voice-ops/store-adapters";
+import { type StoreAdapter } from "@voice-ops/store-adapters";
 import type { Db } from "../db/index.js";
 import { logger } from "../logger.js";
 import { buildStoreAdapter, type ProfileProvider, type ProfileSettings } from "./factory.js";
@@ -121,20 +119,30 @@ export class ProfileManager {
 
     let activeSeeded = false;
     if (process.env.SHOPIFY_STORE_DOMAIN && process.env.SHOPIFY_ADMIN_TOKEN) {
-      seed("Bazaar Box (Shopify)", "shopify", {
-        domain: process.env.SHOPIFY_STORE_DOMAIN,
-        token: process.env.SHOPIFY_ADMIN_TOKEN,
-        currency: process.env.SHOPIFY_CURRENCY || undefined,
-      }, 1);
+      seed(
+        "Bazaar Box (Shopify)",
+        "shopify",
+        {
+          domain: process.env.SHOPIFY_STORE_DOMAIN,
+          token: process.env.SHOPIFY_ADMIN_TOKEN,
+          currency: process.env.SHOPIFY_CURRENCY || undefined,
+        },
+        1,
+      );
       activeSeeded = true;
       logger.info("profiles: seeded Bazaar Box (Shopify) from environment");
     }
     if (process.env.CUSTOM_BASE_URL && process.env.CUSTOM_API_KEY) {
-      seed("Kapraa.pk (custom website)", "custom", {
-        baseUrl: process.env.CUSTOM_BASE_URL,
-        apiKey: process.env.CUSTOM_API_KEY,
-        currency: process.env.CUSTOM_CURRENCY || undefined,
-      }, activeSeeded ? 0 : 1);
+      seed(
+        "Kapraa.pk (custom website)",
+        "custom",
+        {
+          baseUrl: process.env.CUSTOM_BASE_URL,
+          apiKey: process.env.CUSTOM_API_KEY,
+          currency: process.env.CUSTOM_CURRENCY || undefined,
+        },
+        activeSeeded ? 0 : 1,
+      );
       activeSeeded = activeSeeded || true;
       logger.info("profiles: seeded Kapraa.pk (custom) from environment");
     }
@@ -186,9 +194,8 @@ export class ProfileManager {
 
   private ensureSomeActive(): StoreProfile {
     this.db.exec("UPDATE store_profiles SET active = 0");
-    const first = this.db
-      .prepare("SELECT id FROM store_profiles ORDER BY id ASC LIMIT 1")
-      .get() as { id: number } | undefined;
+    const first = this.db.prepare("SELECT id FROM store_profiles ORDER BY id ASC LIMIT 1").get() as
+      { id: number } | undefined;
     if (!first) throw new Error("No store profiles configured");
     this.db.prepare("UPDATE store_profiles SET active = 1 WHERE id = ?").run(first.id);
     this.activeId = first.id;
@@ -206,7 +213,10 @@ export class ProfileManager {
     this.activeId = id;
     this.cache.delete(String(id)); // rebuild from possible edited settings
     const adapter = this.adapterFor(profile);
-    logger.info({ profileId: id, name: profile.name, provider: profile.provider }, "profile activated");
+    logger.info(
+      { profileId: id, name: profile.name, provider: profile.provider },
+      "profile activated",
+    );
     return { profile, adapter };
   }
 
@@ -231,7 +241,11 @@ export class ProfileManager {
     logger.info({ profileId: id, name: profile.name }, "profile deleted");
   }
 
-  async create(input: { name: string; provider: string; settings: ProfileSettings }): Promise<StoreProfile> {
+  async create(input: {
+    name: string;
+    provider: string;
+    settings: ProfileSettings;
+  }): Promise<StoreProfile> {
     const name = input.name.trim();
     if (!name) throw new Error("A store name is required");
     const provider = input.provider.trim().toLowerCase();
@@ -240,7 +254,10 @@ export class ProfileManager {
     }
     switch (provider) {
       case "shopify": {
-        input.settings = { ...input.settings, domain: await resolveShopifyDomain(input.settings.domain ?? "") };
+        input.settings = {
+          ...input.settings,
+          domain: await resolveShopifyDomain(input.settings.domain ?? ""),
+        };
         if (!input.settings.token?.trim()) {
           throw new Error(
             "Shopify admin token is required — copy it from Shopify admin → Settings → Apps → develop apps (starts with shpat_).",
@@ -250,8 +267,10 @@ export class ProfileManager {
       }
       case "woocommerce":
         if (!input.settings.baseUrl?.trim()) throw new Error("WooCommerce site URL is required");
-        if (!input.settings.key?.startsWith("ck_")) throw new Error("WooCommerce consumer key (ck_...) is required");
-        if (!input.settings.secret?.startsWith("cs_")) throw new Error("WooCommerce consumer secret (cs_...) is required");
+        if (!input.settings.key?.startsWith("ck_"))
+          throw new Error("WooCommerce consumer key (ck_...) is required");
+        if (!input.settings.secret?.startsWith("cs_"))
+          throw new Error("WooCommerce consumer secret (cs_...) is required");
         break;
       case "custom":
         if (!input.settings.baseUrl?.trim()) throw new Error("The store's API URL is required");
@@ -269,9 +288,7 @@ export class ProfileManager {
       active: false,
     });
     const result = this.db
-      .prepare(
-        "INSERT INTO store_profiles (name, provider, settings, active) VALUES (?, ?, ?, 0)",
-      )
+      .prepare("INSERT INTO store_profiles (name, provider, settings, active) VALUES (?, ?, ?, 0)")
       .run(name, provider, JSON.stringify(input.settings ?? {}));
     const created = this.get(Number(result.lastInsertRowid));
     if (!created) throw new Error("Profile vanished right after creation");

@@ -32,8 +32,8 @@ describe("resolveShopifyDomain", () => {
   });
 
   it("throws a helpful error when the site is not Shopify-hosted", async () => {
-    await expect(resolveShopifyDomain("example.org", fakeFetch("<html>plain site</html>"))).rejects.toThrow(
-      /not a Shopify admin domain/,
-    );
+    await expect(
+      resolveShopifyDomain("example.org", fakeFetch("<html>plain site</html>")),
+    ).rejects.toThrow(/not a Shopify admin domain/);
   });
 });

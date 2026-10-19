@@ -19,12 +19,12 @@ Use "Sign in with GitHub" so Render can see `storefront-voice-ops`.
 
 Dashboard → **New → Web Service** → pick the `storefront-voice-ops` repo:
 
-| Setting       | Value                      |
-| ------------- | -------------------------- |
-| Runtime       | Node                       |
+| Setting       | Value                          |
+| ------------- | ------------------------------ |
+| Runtime       | Node                           |
 | Build command | `npm install && npm run build` |
-| Start command | `npm start`                |
-| Instance type | Free                       |
+| Start command | `npm start`                    |
+| Instance type | Free                           |
 
 ## 3. Persistent disk (keeps the demo store between restarts)
 
@@ -37,11 +37,11 @@ Service → **Disks → Add**:
 
 For a **public try-it-now link**, set only these — real stores stay off it:
 
-| Key             | Value                                            |
-| --------------- | ------------------------------------------------ |
-| `NODE_VERSION`  | `22`                                             |
-| `DB_PATH`       | `/var/data/storefront.sqlite`                     |
-| `DEMO_MODE`     | `true` — gives a one-click "Reset demo" button     |
+| Key            | Value                                          |
+| -------------- | ---------------------------------------------- |
+| `NODE_VERSION` | `22`                                           |
+| `DB_PATH`      | `/var/data/storefront.sqlite`                  |
+| `DEMO_MODE`    | `true` — gives a one-click "Reset demo" button |
 
 The Practice store is seeded automatically; visitors talk to pretend data. Do **not** add the
 `SHOPIFY_*` / `CUSTOM_*` variables on the public instance.

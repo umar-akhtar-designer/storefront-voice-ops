@@ -65,10 +65,15 @@
   /** Shown while a connected store refuses to answer (expired token, local server off, …). */
   function storeUnreachable() {
     const p = document.getElementById("provider");
-    if (p) p.innerHTML = '<i class="dot red"></i><span class="k">store</span><span class="v">can\'t connect</span>';
+    if (p)
+      p.innerHTML =
+        '<i class="dot red"></i><span class="k">store</span><span class="v">can\'t connect</span>';
     if (!document.body.dataset.unreachableWarned) {
       document.body.dataset.unreachableWarned = "1";
-      toast("This store isn't answering (connection may have expired). Pick another store or re-add it.", "error");
+      toast(
+        "This store isn't answering (connection may have expired). Pick another store or re-add it.",
+        "error",
+      );
     }
   }
 

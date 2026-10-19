@@ -33,7 +33,10 @@ export type ProfileProvider = "mock" | "shopify" | "woocommerce" | "custom";
  * Build a StoreAdapter from a profile (name → provider + settings). This is the single place that
  * knows how settings map to adapters, so the HTTP app, profiles and tests share one code path.
  */
-export function buildStoreAdapter(provider: ProfileProvider, settings: ProfileSettings): StoreAdapter {
+export function buildStoreAdapter(
+  provider: ProfileProvider,
+  settings: ProfileSettings,
+): StoreAdapter {
   switch (provider) {
     case "shopify":
       return createShopifyAdapter({

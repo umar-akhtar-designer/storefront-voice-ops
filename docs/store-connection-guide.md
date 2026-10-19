@@ -50,21 +50,22 @@ For a website with custom code, the store side must expose **one small JSON API*
 ### What the developer builds (6 endpoints + 1 optional)
 
 All endpoints:
+
 - Answer with **JSON** (`Content-Type: application/json`)
 - Check a secret header sent with every request: `x-api-key: <VALUE_YOU_INVENT>`. Wrong/missing key → HTTP `401`.
 - Unknown id → HTTP `404` with `{"error": "..."}`. Too many requests may use `429`. Broken server → `500`.
 
 Use any URL prefix you like, e.g. `/api/voice-ops/...` — that path is fine; the operator just needs the base URL.
 
-| # | Endpoint | Method | What it must return |
-|---|----------|--------|---------------------|
-| 1 | `/orders?status=pending&limit=20` | GET | Newest orders first. `status` may be `pending`, `shipped`, `delivered`, `cancelled` — or omitted for all |
-| 2 | `/orders/{id}` | GET | One order by ORDER NUMBER, e.g. `/orders/1002` |
-| 3 | `/products?lowStockBelow=10` | GET (or filter client-side) | Products with their stock; if `lowStockBelow` given, only stock ≤ that number |
-| 4 | `/orders/{id}/fulfill` | POST | Mark the order shipped, store tracking number (body example below) |
-| 5 | `/orders/{id}/cancel` | POST | Cancel the order, store the reason (body example below) |
-| 6 | `/products/{sku}/restock` | POST | Increase stock for a product SKU (body example below) |
-| 7 | *(optional)* `/sales/today` | GET | Today's revenue, order count, and best-selling product — powers a nicer briefing |
+| #   | Endpoint                          | Method                      | What it must return                                                                                      |
+| --- | --------------------------------- | --------------------------- | -------------------------------------------------------------------------------------------------------- |
+| 1   | `/orders?status=pending&limit=20` | GET                         | Newest orders first. `status` may be `pending`, `shipped`, `delivered`, `cancelled` — or omitted for all |
+| 2   | `/orders/{id}`                    | GET                         | One order by ORDER NUMBER, e.g. `/orders/1002`                                                           |
+| 3   | `/products?lowStockBelow=10`      | GET (or filter client-side) | Products with their stock; if `lowStockBelow` given, only stock ≤ that number                            |
+| 4   | `/orders/{id}/fulfill`            | POST                        | Mark the order shipped, store tracking number (body example below)                                       |
+| 5   | `/orders/{id}/cancel`             | POST                        | Cancel the order, store the reason (body example below)                                                  |
+| 6   | `/products/{sku}/restock`         | POST                        | Increase stock for a product SKU (body example below)                                                    |
+| 7   | _(optional)_ `/sales/today`       | GET                         | Today's revenue, order count, and best-selling product — powers a nicer briefing                         |
 
 ### Responses the app understands
 
@@ -82,7 +83,12 @@ Order object (endpoints 1 & 2) — only the fields below are required; extra fie
   "trackingNumber": null,
   "cancelledReason": null,
   "items": [
-    { "sku": "LT-TABLE-FOLD", "name": "Foldable Laptop Bed Table", "quantity": 1, "unitPrice": { "amount": 2750.0, "currency": "PKR" } }
+    {
+      "sku": "LT-TABLE-FOLD",
+      "name": "Foldable Laptop Bed Table",
+      "quantity": 1,
+      "unitPrice": { "amount": 2750.0, "currency": "PKR" }
+    }
   ]
 }
 ```
@@ -129,7 +135,7 @@ Optional sales summary (endpoint 7):
   "date": "2026-10-17",
   "revenue": { "amount": 5400.0, "currency": "PKR" },
   "orders": 2,
-  "topSellers": [ { "sku": "LT-TABLE-FOLD", "name": "Foldable Laptop Bed Table", "units": 3 } ]
+  "topSellers": [{ "sku": "LT-TABLE-FOLD", "name": "Foldable Laptop Bed Table", "units": 3 }]
 }
 ```
 
