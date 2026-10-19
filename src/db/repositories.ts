@@ -124,6 +124,8 @@ export class PendingActionRepository {
 
   /** Most recent still-pending actions across all sessions (for the simulator's "awaiting" pane). */
   recentPending(limit = 10): PendingAction[] {
+    // self-sweep: anything past its expiry can no longer be confirmed, so hide it
+    this.expireStale(new Date().toISOString());
     const rows = this.db
       .prepare(
         "SELECT * FROM pending_actions WHERE status = 'pending' ORDER BY created_at DESC, rowid DESC LIMIT ?",
