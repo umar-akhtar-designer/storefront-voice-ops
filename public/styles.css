@@ -909,3 +909,14 @@ button.danger:hover {
   color: var(--danger);
   border-color: var(--danger);
 }
+
+/* header brand is a home link now */
+a.brand {
+  color: #fff;
+  text-decoration: none;
+}
+a.brand:hover .brand-text strong {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(255, 255, 255, 0.45);
+}

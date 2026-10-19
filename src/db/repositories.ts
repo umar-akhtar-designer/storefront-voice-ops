@@ -132,12 +132,20 @@ export class PendingActionRepository {
     return rows.map(mapPending);
   }
 
-  /** Cancel any other pending action for the same session/tool/target (one pending per target). */
+  /** Cancel every still-pending action. Returns how many were cleared. */
+  cancelAllPending(): number {
+    const result = this.db
+      .prepare("UPDATE pending_actions SET status = 'cancelled' WHERE status = 'pending'")
+      .run();
+    return result.changes;
+  }
+
+  /** Cancel any other pending action for the same tool/target (one pending per target, any session). */
   supersede(sessionId: string, tool: string, target: string | undefined, keepId: string): number {
     const result = this.db
       .prepare(
         `UPDATE pending_actions SET status = 'cancelled'
-         WHERE session_id = @sessionId AND tool = @tool AND status = 'pending' AND id != @keepId
+         WHERE tool = @tool AND status = 'pending' AND id != @keepId
            AND (target IS @target OR target = @target)`,
       )
       .run({ sessionId, tool, target: target ?? null, keepId });

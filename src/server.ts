@@ -332,18 +332,44 @@ export function createApp(): express.Express {
   const GREETING_RE =
     /^(hi+|hello|hey|salam( aleikum| alikum)?|aoa|good (morning|afternoon|evening)|yo|help|what can (i|you) do)[.! ]*$/;
 
+  /** Couriers sellers actually use in Pakistan; anything else passes through verbatim. */
+  function spokenCarrier(raw: string): string {
+    const w = raw.replace(/\s+/g, "").toLowerCase();
+    if (w.startsWith("leopard")) return "Leopards";
+    if (w.startsWith("post")) return "PostEx";
+    if (w.startsWith("call")) return "Call Courier";
+    if (w.includes("&")) return "M&P";
+    return w.charAt(0).toUpperCase() + w.slice(1);
+  }
+
   function keywordPlan(q: string): { name: string; args: Record<string, unknown> } {
     const s = q.trim().toLowerCase();
+    // Alphanumeric order refs like ORD-2026-6AD4F9112067C (custom stores), or 1xxx (mock/shopify).
+    const ordCode = s
+      .match(/\bord[- ]?[0-9a-f][0-9a-f-]{3,30}\b/i)?.[0]
+      ?.replace(/\s+/g, "-")
+      .toUpperCase();
+    const carrierWord = s
+      .match(/\b(?:with|via|by)\s+(tcs|leopards?|trax|post\s?ex|call\s?courier|swyft|m\s*&\s*p)\b/)?.[1];
+    const carrier = carrierWord ? spokenCarrier(carrierWord) : undefined;
     const id = s.match(/\b(1\d{3})\b/)?.[1];
-    const digits = [...s.matchAll(/\b(\d{4,8})\b/g)];
-    const code = digits.at(-1)?.[1];
     const affirm = /^(yes|yep|yeah|yup|confirm|do it|proceed|go ahead|ok|okay|sure|right)\b/.test(
       s,
     );
     const deny = /^(no|nope|cancel|stop|don'?t|never mind|nevermind|abort)\b/.test(s);
 
-    if (affirm) return { name: "confirm_action", args: code ? { code } : {} };
+    if (affirm) return { name: "confirm_action", args: {} };
     if (deny) return { name: "cancel_action", args: {} };
+    if (ordCode && /(ship|dispatch|send)/.test(s)) {
+      return {
+        name: "mark_order_shipped",
+        args: { orderId: ordCode, ...(carrier ? { carrier } : {}) },
+      };
+    }
+    if (ordCode && /cancel/.test(s)) return { name: "cancel_order", args: { orderId: ordCode } };
+    if (ordCode && /(tell|about|update|status|details|info|where|what)/.test(s)) {
+      return { name: "get_order", args: { orderId: ordCode } };
+    }
     if (/(waiting|pending).*(confirm|approval)|what.*awaiting/.test(s))
       return { name: "list_pending_actions", args: {} };
     if (/audit|what (did|have) (you|i) (do|change|ship|cancel)/.test(s))
@@ -354,10 +380,13 @@ export function createApp(): express.Express {
       return { name: "get_weekly_report", args: {} };
     if (/top (seller|selling)|best (seller|selling)/.test(s))
       return { name: "get_top_sellers", args: { period: "week" } };
-    if (/cancel.*order/.test(s) && id)
-      return { name: "cancel_order", args: { orderId: Number(id) } };
-    if (/(ship|dispatch|send out).*(order|parcel|package)/.test(s) && id)
-      return { name: "mark_order_shipped", args: { orderId: Number(id) } };
+    if (/cancel.*order/.test(s) && id) return { name: "cancel_order", args: { orderId: Number(id) } };
+    if (/(ship|dispatch|send out).*(order|parcel|package)/.test(s) && id) {
+      return {
+        name: "mark_order_shipped",
+        args: { orderId: Number(id), ...(carrier ? { carrier } : {}) },
+      };
+    }
     if (/restock|reorder|supplier/.test(s)) {
       // The simulator's restock chips send the SKU explicitly; casual speech falls back to the
       // most-recently-low product.
@@ -531,6 +560,23 @@ export function createApp(): express.Express {
   });
 
   // ---- Simulator state: read-only snapshot for the UI's store + inspector panes ----
+  app.post("/api/confirmations/clear", guardOrigin, limiter, (_req, res) => {
+    try {
+      const db = getDb();
+      const cleared = new PendingActionRepository(db).cancelAllPending();
+      new AuditLogger(new AuditRepository(getDb())).cancelled({
+        tool: "clear_pending_actions",
+        actor: "operator",
+        sessionId: "dashboard",
+        summary: `Cleared ${cleared} pending confirmation${cleared === 1 ? "" : "s"}`,
+      });
+      res.json({ ok: true, cleared });
+    } catch (error) {
+      logger.error({ err: error }, "clear confirmations failed");
+      res.status(500).json({ ok: false, error: "Could not clear confirmations." });
+    }
+  });
+
   app.get("/api/state", guardOrigin, limiter, async (_req, res) => {
     try {
       const current = getServices();

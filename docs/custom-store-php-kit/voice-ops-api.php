@@ -187,8 +187,10 @@ try {
         $where = '';
         $params = [];
         if (!empty($_GET['status'])) {
-            $where = 'WHERE ' . $T['orders_status'] . ' = ?';
-            $params[] = $_GET['status'];
+            // The app counts "pending" exactly like the seller's own dashboard Pending tab —
+            // e.g. Confirmed/Packaging orders are a different tab there, not Pending.
+            $where = 'WHERE LOWER(' . $T['orders_status'] . ') = ?';
+            $params[] = strtolower((string)$_GET['status']);
         }
         $sql = "SELECT * FROM {$T['orders_table']} $where ORDER BY {$T['orders_created_at']} DESC LIMIT $limit";
         $q = db()->prepare($sql);

@@ -102,9 +102,18 @@ export function moneyForSpeech(
   return about ? `about ${spoken}` : spoken;
 }
 
-/** Spell an order/product id one character at a time: "1042" -> "one oh four two". */
+/**
+ * Spell an order/product id so it is unmistakable when spoken:
+ * "1042" -> "one thousand forty-two"; "1002" -> "one thousand two";
+ * lettered codes are read character by character.
+ */
 export function spellId(id: string): string {
   const digits = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
+  // Purely-numeric ids: read as a natural number.
+  if (/^\d+$/.test(id)) {
+    return numberToWords(Number(id));
+  }
+  // Mixed/lettered ids: character by character ("ORD-4A2B" -> "o r d dash four a two b").
   const out = [...id]
     .map((ch) => {
       if (ch >= "0" && ch <= "9") {

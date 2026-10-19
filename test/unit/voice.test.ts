@@ -56,9 +56,10 @@ describe("formatMoney", () => {
 });
 
 describe("spellId", () => {
-  it("spells digits one at a time and says zero as oh", () => {
-    expect(spellId("1042")).toBe("one oh four two");
-    expect(spellId("1007")).toBe("one oh oh seven");
+  it("reads pure numeric ids as natural numbers", () => {
+    expect(spellId("1042")).toBe("one thousand forty-two");
+    expect(spellId("1007")).toBe("one thousand seven");
+    expect(spellId("1008")).toBe("one thousand eight");
   });
 
   it("keeps non-digit characters", () => {
