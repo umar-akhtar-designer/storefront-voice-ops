@@ -297,7 +297,10 @@ export function createApp(): express.Express {
   app.all("/mcp", notAllowed);
 
   // ---- Simulator agent: talks to this server over the real protocol ----
-  const mcpUrl = `http://127.0.0.1:${config.PORT}/mcp`;
+  // The MCP self-connection always targets the port THIS app instance actually listens on,
+  // not a config guess — that keeps /api/chat working in tests bound to port 0.
+  let boundPort = config.PORT;
+  const chatClientMcpUrl = () => `http://127.0.0.1:${boundPort}/mcp`;
   let chatClient: Client | undefined;
   let queue: Promise<unknown> = Promise.resolve();
 
@@ -307,7 +310,7 @@ export function createApp(): express.Express {
       ? { Authorization: `Bearer ${config.MCP_AUTH_TOKEN}` }
       : undefined;
     await client.connect(
-      new StreamableHTTPClientTransport(new URL(mcpUrl), {
+      new StreamableHTTPClientTransport(new URL(chatClientMcpUrl()), {
         ...(headers ? { requestInit: { headers } } : {}),
       }),
     );
@@ -432,6 +435,20 @@ export function createApp(): express.Express {
 
   async function runChat(message: string): Promise<ChatResult> {
     const trace: ChatResult["trace"] = [];
+
+    // Greetings must not depend on the MCP self-connection at all.
+    const greetingProbe = message.trim().toLowerCase();
+    if (greetingProbe.length === 0 || GREETING_RE.test(greetingProbe)) {
+      return {
+        reply:
+          "Hello! You can ask about today's sales, what is running low in stock, or orders " +
+          "waiting to ship. You can also say things like ship order 1008 or cancel order 1004 — " +
+          "writes always ask for a spoken confirmation first.",
+        trace,
+        engine: "offline-router",
+      };
+    }
+
     let client = await getChatClient();
 
     const callTool = async (
@@ -512,18 +529,6 @@ export function createApp(): express.Express {
           }
           messages.push({ role: "user", content: results });
         }
-      }
-
-      const trimmed = message.trim().toLowerCase();
-      if (trimmed.length === 0 || GREETING_RE.test(trimmed)) {
-        return {
-          reply:
-            "Hello! You can ask about today's sales, what is running low in stock, or orders " +
-            "waiting to ship. You can also say things like ship order 1008 or cancel order 1004 — " +
-            "writes always ask for a spoken confirmation first.",
-          trace,
-          engine: "offline-router",
-        };
       }
 
       const plan = keywordPlan(message);
@@ -825,6 +830,18 @@ export function createApp(): express.Express {
         });
     });
   }
+
+  // Track the port THIS instance actually listens on so the chat self-client follows it
+  // (config.PORT is only the fallback when the caller never listens explicitly).
+  const realListen = app.listen.bind(app) as typeof app.listen;
+  app.listen = ((...args: Parameters<typeof app.listen>) => {
+    const server = realListen(...args) as ReturnType<typeof app.listen>;
+    server.once("listening", () => {
+      const address = server.address();
+      if (address && typeof address === "object") boundPort = address.port;
+    });
+    return server;
+  }) as typeof app.listen;
 
   return app;
 }

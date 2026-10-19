@@ -18,6 +18,8 @@ describe("GET-free /api/chat smalltalk handling", () => {
   });
 
   afterAll(async () => {
+    // The chat self-client holds an MCP session open; drop its sockets before closing.
+    httpServer.closeAllConnections();
     await new Promise<void>((resolve) => httpServer.close(() => resolve()));
   });
 
