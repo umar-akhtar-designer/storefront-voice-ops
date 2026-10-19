@@ -70,9 +70,25 @@ function bindProfileAdapter(id: number): { profile: StoreProfile; adapter: Store
   return bound;
 }
 
+/**
+ * A StoreAdapter view that always resolves to the ACTIVE profile's adapter at call time, so a
+ * profile switch made in the UI (or by another session) takes effect immediately for every
+ * open MCP session, not only new ones.
+ */
+function liveAdapter(current: Services): StoreAdapter {
+  const profileManager = current.profiles;
+  return new Proxy(profileManager, {
+    get(_target, prop) {
+      const bound = profileManager.currentAdapter() as unknown as Record<string | symbol, unknown>;
+      const value = bound[prop];
+      return typeof value === "function" ? (value as (...a: unknown[]) => unknown).bind(bound) : value;
+    },
+  }) as unknown as StoreAdapter;
+}
+
 function baseDeps(current: Services): ServerDeps {
   return {
-    adapter: current.adapter,
+    adapter: liveAdapter(current),
     confirm: current.confirm,
     audit: current.audit,
     ai: current.ai,

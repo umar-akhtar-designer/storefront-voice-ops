@@ -47,10 +47,28 @@
   async function refreshState() {
     try {
       const res = await fetch("/api/state");
-      if (!res.ok) return;
-      renderState(await res.json());
+      if (!res.ok) {
+        storeUnreachable();
+        return;
+      }
+      const state = await res.json();
+      if (state.error) {
+        storeUnreachable();
+        return;
+      }
+      renderState(state);
     } catch {
-      /* ignore transient errors */
+      storeUnreachable();
+    }
+  }
+
+  /** Shown while a connected store refuses to answer (expired token, local server off, …). */
+  function storeUnreachable() {
+    const p = document.getElementById("provider");
+    if (p) p.innerHTML = '<i class="dot red"></i><span class="k">store</span><span class="v">can\'t connect</span>';
+    if (!document.body.dataset.unreachableWarned) {
+      document.body.dataset.unreachableWarned = "1";
+      toast("This store isn't answering (connection may have expired). Pick another store or re-add it.", "error");
     }
   }
 
@@ -386,6 +404,7 @@
         return;
       }
       profileSelect.innerHTML = "";
+      delete document.body.dataset.unreachableWarned;
       await Promise.all([refreshProfiles(), refreshState()]);
     } catch {
       toast("Network error while switching store.", "error");
@@ -462,6 +481,7 @@
       }
       toast(`Deleted “${name}”.`, "success");
       profileSelect.innerHTML = "";
+      delete document.body.dataset.unreachableWarned;
       await Promise.all([refreshProfiles(), refreshState()]);
     } catch {
       toast("Network error while deleting the store.", "error");
@@ -527,6 +547,7 @@
         activated = false;
       }
       profileSelect.innerHTML = "";
+      delete document.body.dataset.unreachableWarned;
       await Promise.all([refreshProfiles(), refreshState()]);
       if (!activated)
         toast(`Saved. Tap the store picker to switch to ${data.profile.name}.`, "success");
