@@ -589,7 +589,7 @@ export function createApp(): express.Express {
         settings?: Record<string, string>;
       };
       const current = getServices();
-      const profile = current.profiles.create({
+      const profile = await current.profiles.create({
         name: String(name ?? ""),
         provider: String(provider ?? ""),
         settings: (settings ?? {}) as never,
@@ -625,6 +625,22 @@ export function createApp(): express.Express {
       });
     } catch (error) {
       logger.warn({ err: error }, "profile activation failed");
+      res.status(400).json({ ok: false, error: (error as Error).message });
+    }
+  });
+
+  app.delete("/api/profiles/:id", guardOrigin, limiter, (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id)) {
+        res.status(400).json({ ok: false, error: "A store id is required" });
+        return;
+      }
+      getServices().profiles.delete(id);
+      const remaining = getServices().profiles.list();
+      res.json({ ok: true, profiles: remaining });
+    } catch (error) {
+      logger.warn({ err: error }, "profile deletion refused");
       res.status(400).json({ ok: false, error: (error as Error).message });
     }
   });

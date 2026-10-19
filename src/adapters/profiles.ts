@@ -33,6 +33,50 @@ interface ProfileRow {
 
 const VALID_PROVIDERS = ["mock", "manual", "shopify", "woocommerce", "custom"];
 
+/**
+ * Accepts whatever the seller pastes as their "Shopify domain" — a storefront URL
+ * ("www.bazaarbox.pk"), the admin URL ("https://acme.myshopify.com/admin") or the bare
+ * admin domain ("acme.myshopify.com") — and returns the clean `xxx.myshopify.com` domain.
+ * For non-myshopify addresses it fetches the storefront once and reads the `Shopify.shop`
+ * marker the platform embeds, so sellers can literally paste their public website.
+ */
+export async function resolveShopifyDomain(
+  raw: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<string> {
+  const cleaned = raw
+    .trim()
+    .replace(/^https?:\/\//i, "")
+    .replace(/\/.*$/, "")
+    .toLowerCase();
+  if (!cleaned) {
+    throw new Error(
+      'Shopify domain is required — e.g. "acme.myshopify.com", or just paste your store\'s web address.',
+    );
+  }
+  if (cleaned.endsWith(".myshopify.com")) return cleaned;
+
+  let html = "";
+  try {
+    const response = await fetchImpl(`https://${cleaned}/`, {
+      headers: { "user-agent": "storefront-voice-ops" },
+      signal: AbortSignal.timeout(6000),
+    });
+    html = await response.text();
+  } catch {
+    // handled below — offline sites simply fail discovery
+  }
+  const match =
+    /shopify\.shop\s*=\s*["']([^"']+\.myshopify\.com)["']/i.exec(html) ??
+    /([a-z0-9][a-z0-9-]*\.myshopify\.com)/i.exec(html);
+  if (!match) {
+    throw new Error(
+      `"${raw}" is not a Shopify admin domain. Open admin.shopify.com, click your store and copy the address ending in .myshopify.com.`,
+    );
+  }
+  return (match[1] ?? cleaned).toLowerCase();
+}
+
 export class ProfileManager {
   private readonly db: Db;
   private readonly cache = new Map<string, StoreAdapter>();
@@ -166,7 +210,28 @@ export class ProfileManager {
     return { profile, adapter };
   }
 
-  create(input: { name: string; provider: string; settings: ProfileSettings }): StoreProfile {
+  /**
+   * Remove a store. The active profile must be switched away first (the UI does that via
+   * the confirm dialog), and the last remaining profile can never be deleted.
+   */
+  delete(id: number): void {
+    const count = (
+      this.db.prepare("SELECT COUNT(*) AS n FROM store_profiles").get() as { n: number }
+    ).n;
+    if (count <= 1) {
+      throw new Error("This is your only store — add another one before deleting it.");
+    }
+    const profile = this.get(id);
+    if (!profile) throw new Error(`Profile ${id} not found`);
+    if (profile.active) {
+      throw new Error("Switch to another store first, then delete this one.");
+    }
+    this.db.prepare("DELETE FROM store_profiles WHERE id = ?").run(id);
+    this.cache.delete(String(id));
+    logger.info({ profileId: id, name: profile.name }, "profile deleted");
+  }
+
+  async create(input: { name: string; provider: string; settings: ProfileSettings }): Promise<StoreProfile> {
     const name = input.name.trim();
     if (!name) throw new Error("A store name is required");
     const provider = input.provider.trim().toLowerCase();
@@ -174,10 +239,15 @@ export class ProfileManager {
       throw new Error(`Unknown store type "${provider}"`);
     }
     switch (provider) {
-      case "shopify":
-        if (!input.settings.domain?.trim()) throw new Error("Shopify domain (xxx.myshopify.com) is required");
-        if (!input.settings.token?.trim()) throw new Error("Shopify admin token is required");
+      case "shopify": {
+        input.settings = { ...input.settings, domain: await resolveShopifyDomain(input.settings.domain ?? "") };
+        if (!input.settings.token?.trim()) {
+          throw new Error(
+            "Shopify admin token is required — copy it from Shopify admin → Settings → Apps → develop apps (starts with shpat_).",
+          );
+        }
         break;
+      }
       case "woocommerce":
         if (!input.settings.baseUrl?.trim()) throw new Error("WooCommerce site URL is required");
         if (!input.settings.key?.startsWith("ck_")) throw new Error("WooCommerce consumer key (ck_...) is required");

@@ -51,6 +51,7 @@
             <option value="">stores…</option>
           </select>
           <button id="add-store" class="ghost" title="Connect another store">+ Add store</button>
+          <button id="remove-store" class="ghost" title="Delete the store selected in the picker (the active one is safe)">🗑</button>
           <button id="reset" class="ghost" hidden>↺ Reset demo</button>
         </div>
       </div>
@@ -194,7 +195,7 @@
           <input id="s-baseurl" placeholder="Store URL (Woo/custom)" hidden />
           <input id="s-key" placeholder="API key / consumer key" hidden />
           <input id="s-secret" placeholder="Consumer secret (Woo only)" hidden />
-          <input id="s-domain" placeholder="Shopify domain (xxx.myshopify.com)" hidden />
+          <input id="s-domain" placeholder="Your store URL or xxx.myshopify.com" hidden />
           <input id="s-token" placeholder="Shopify admin token (shpat_…)" hidden />
           <input id="s-currency" placeholder="Currency code (PKR)" />
           <div class="dialog-actions">

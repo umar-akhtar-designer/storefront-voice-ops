@@ -398,6 +398,33 @@
   document.getElementById("add-store-cancel").addEventListener("click", () => {
     addStoreDialog.hidden = true;
   });
+  // clicking the dark area outside the card also closes it
+  addStoreDialog.addEventListener("click", (e) => {
+    if (e.target === addStoreDialog) addStoreDialog.hidden = true;
+  });
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !addStoreDialog.hidden) addStoreDialog.hidden = true;
+  });
+
+  document.getElementById("remove-store").addEventListener("click", async () => {
+    const id = Number(profileSelect.value);
+    const name = profileSelect.selectedOptions[0]?.textContent.replace(" ✓", "").trim() ?? "this store";
+    if (!Number.isInteger(id)) return;
+    if (!confirm(`Delete “${name}”? Its connection details will be removed (your orders/products on the real store are never touched).`)) return;
+    try {
+      const res = await fetch(`/api/profiles/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        toast(data.error || "Could not delete the store.", "error");
+        return;
+      }
+      toast(`Deleted “${name}”.`, "success");
+      profileSelect.innerHTML = "";
+      await Promise.all([refreshProfiles(), refreshState()]);
+    } catch {
+      toast("Network error while deleting the store.", "error");
+    }
+  });
 
   const providerFields = {
     woocommerce: ["s-baseurl", "s-key", "s-secret"],

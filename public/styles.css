@@ -836,3 +836,8 @@ code {
     transform: translateY(0);
   }
 }
+
+/* the [hidden] attribute must actually win over .dialog-backdrop's display */
+.dialog-backdrop[hidden] {
+  display: none;
+}
