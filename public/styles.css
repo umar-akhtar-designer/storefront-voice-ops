@@ -882,3 +882,30 @@ button.danger {
 button.danger:hover {
   filter: brightness(1.1);
 }
+
+/* ---- Polished header status chips ---- */
+.pill .k {
+  text-transform: uppercase;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  color: rgba(231, 234, 246, 0.55);
+}
+.pill .v {
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.74rem;
+  text-transform: capitalize;
+}
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.34rem 0.55rem;
+}
+.icon-btn svg {
+  display: block;
+}
+.icon-btn:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}

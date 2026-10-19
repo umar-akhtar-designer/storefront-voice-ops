@@ -114,7 +114,7 @@
 
   function renderState(state) {
     if (state.currency) window.__currency = state.currency;
-    providerEl.innerHTML = `<i class="dot mint"></i>provider: ${escapeHtml(state.provider)}`;
+    providerEl.innerHTML = `<i class="dot mint"></i><span class="k">store</span><span class="v">${escapeHtml(state.provider)}</span>`;
 
     /* ---- Low stock: whole row taps into a supplier restock draft ---- */
     renderList(
@@ -229,7 +229,7 @@
       const data = await res.json();
       pending.remove();
       addMessage("assistant", data.reply || "(no reply)", `engine: ${data.engine}`);
-      engineEl.innerHTML = `<i class="dot indigo"></i>engine: ${escapeHtml(data.engine ?? "?")}`;
+      engineEl.innerHTML = `<i class="dot indigo"></i><span class="k">engine</span><span class="v">${escapeHtml(data.engine ?? "?")}</span>`;
       renderTrace(data.trace);
       speak(data.reply || "");
     } catch (error) {
