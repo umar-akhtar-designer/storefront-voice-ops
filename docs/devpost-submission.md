@@ -77,6 +77,71 @@ the transport and the tools — the hard part is the seam between spoken languag
 - Shopify dev-store run-through for the adapter contract against live fixtures.
 - Reorder recommendations from real Bedrock trend prompts.
 
+## Page 2 — "Project details" (paste ready)
+
+### About the project (story markdown)
+
+## Inspiration
+
+A seller in Karachi runs kapraa.pk, a real unstitched-clothes store, and like thousands of
+Pakistani sellers he lives in WhatsApp groups and Instagram DMs selling even without a proper
+website. Meanwhile sellers who DO have a system — Shopify, WooCommerce or a custom PHP site —
+still burn hours clicking through admin panels for every order. We asked one question: what if
+the seller could just TALK, and the store does the work?
+
+Voice assistants exist, but nobody trusts one with a LIVE catalogue. So we built the assistant
+we would actually trust: every read is instant, every write asks a spoken Yes/No first, and
+everything lands in an audit log.
+
+## What it does
+
+- **18 MCP tools** over Streamable HTTP (the Alexa+ protocol): sales briefs today/week, live
+  low-stock, order lookups, status updates with tracking, restock planning, customer message
+  drafts.
+- **Works with every kind of store** — first-class Shopify Admin GraphQL adapter, Woocomerce
+  REST adapter, a custom JSON adapter that bridges any PHP/MySQL site through a 300-line file
+  (live on kapraa.pk right now), and a **manual mode for sellers with NO website** (WhatsApp and
+  Instagram sellers add products and record orders in the app, and voice runs them the same way).
+- **Many stores, one app**: per-store profiles with instant switching and an "add store in one
+  tap" flow in the browser.
+- **Safety by design**: confirmation gate with 4-digit spoken codes, one pending action per
+  order, TTL expiry, rate limits, token auth, origin guard, and a complete audit log of the
+  MCP tool calls that made it happen.
+- A **three-pane web simulator** (Web Speech in/out) so anyone can run the whole thing from a
+  browser — plus a Practice store with fake data for zero-risk demos.
+
+## How we built it
+
+TypeScript + Express + MCP SDK (Streamable HTTP, session state in SQLite), Zod config, and the
+store layer published separately as an npm package held to a shared behavioural contract run
+against a fake REST endpoint. Amazon Bedrock drafts the words when configured and degrades to
+deterministic voice templates otherwise — the demo runs fully offline-proof. 5 Playwright
+browser tests, 174 green unit/integration tests in CI, plus gitleaks and npm-audit gates on
+every push. We connected it to a REAL kapraa.pk production database during development, which
+survived contact with real-world data (null totals, mixed order states, late night traffic) —
+that audience-testing pushed the adapters far beyond clean JSON fixtures.
+
+## Challenges we ran into
+
+- MCP session state vs scaling trade-off; an ADR documents why sessions stay stateful.
+- WooCommerce has no native fulfilment or tracking — we mapped semantics carefully (ADR-0002).
+- Bedrock's Converse typing needed one adapter cast (friction log FL-008).
+- Live store data broke our first "clean" mappings immediately — the hard way to learn that
+  real schemas lie.
+
+## What we learned
+
+Voice UX is mostly safety UX. A tool that answers "what's selling" needs no permission; a tool
+that ships an order needs idempotency, misunderstood-word handling and confirmations that
+survive reloads. MCP gives the transport and tools — the hard part is the seam between spoken
+language and shop state.
+
+## What's next
+
+- Real Alexa+ console run with account linking to the deployed endpoint.
+- Reorder recommendations from Bedrock trend prompts.
+- Multi-worker mode once horizontal scale is required (ADR-0005 notes the path).
+
 ## Optional pitch (if a short "how I built it" field exists)
 
 Single TypeScript service: Express serves the MCP Streamable HTTP endpoint, the simulator, and the
