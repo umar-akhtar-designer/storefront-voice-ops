@@ -1,8 +1,15 @@
 # Put the app online for everyone (Render, free tier)
 
-Judges don't need this — the Devpost submission works with the video + the GitHub repo (anyone can
-run `npm install && npm run dev` locally). But if you also want a public link that anyone can open,
-this takes ~10 minutes on Render's free plan.
+> **IMPORTANT — public = demo data only.** The app is single-operator (no user accounts): anyone
+> opening the public URL is treated as the store owner. So on any public instance, connect **only
+> the Practice store (pretend data) — never your real Bazaar Box / Kapraa credentials**, or every
+> visitor could read your real orders and stock. Your real stores stay on YOUR laptop (which has
+> no public URL) and in the demo video; judges who want to verify real connections run `npm run dev`
+> locally with their own `.env`.
+
+Judges don't need a public link — the Devpost submission works with the video + the GitHub repo
+(anyone can run `npm install && npm run dev` locally). But if you also want a public "try it now"
+link, this takes ~10 minutes on Render's free plan.
 
 ## 1. Push the repo (already done) and sign up at https://render.com
 
@@ -28,32 +35,18 @@ Service → **Disks → Add**:
 
 ## 4. Environment variables (Service → Environment)
 
-| Key                        | Value                                                             |
-| -------------------------- | ----------------------------------------------------------------- |
-| `NODE_VERSION`             | `22`                                                              |
-| `DB_PATH`                  | `/var/data/storefront.sqlite`                                      |
-| `DEMO_MODE`                | `true` — gives judges a one-click "Reset demo" button               |
-| `SHOPIFY_STORE_DOMAIN`     | `s0ddgv-1d.myshopify.com`                                          |
-| `SHOPIFY_ADMIN_TOKEN`      | *(the current token from your local `.env`)*                        |
-| `SHOPIFY_CURRENCY`         | `PKR`                                                             |
-| `SHOPIFY_CLIENT_ID`        | `09b3a941000a77a4d0bc99617e383b1a`                                 |
-| `SHOPIFY_CLIENT_SECRET`    | *(from the Shopify dev dashboard)*                                 |
-| `CUSTOM_BASE_URL`          | `https://kapraa.pk/voice-api/voice-ops-api.php`                     |
-| `CUSTOM_API_KEY`           | *(the kapraa key from your local `.env` / PHP file)*                |
-| `CUSTOM_CURRENCY`          | `PKR`                                                             |
+For a **public try-it-now link**, set only these — real stores stay off it:
 
-Render gives the service a public URL like `https://storefront-voice-ops.onrender.com` —
-that link works for anyone, anywhere. The store picker switches between Bazaar Box, Kapraa.pk
-and the Practice store exactly like on the laptop.
+| Key             | Value                                            |
+| --------------- | ------------------------------------------------ |
+| `NODE_VERSION`  | `22`                                             |
+| `DB_PATH`       | `/var/data/storefront.sqlite`                     |
+| `DEMO_MODE`     | `true` — gives a one-click "Reset demo" button     |
 
-Notes:
+The Practice store is seeded automatically; visitors talk to pretend data. Do **not** add the
+`SHOPIFY_*` / `CUSTOM_*` variables on the public instance.
 
-- The free plan sleeps after 15 min idle; the first visit then takes ~40s to wake — click before
-  a judging call, or upgrade ($7/mo) for always-on.
-- Secrets stay inside Render's environment variables; they are never in the GitHub repo.
-- Kapraa's PHP file already answers over HTTPS, and Render covers CORS for the browser.
-
-## 5. One more judge-friendly flag (optional)
-
-In `.env` or Render's variables, `DEMO_MODE=true` also enables `/api/demo/reset`, so a judge can
-set the demo back to the opening state between sessions (the Practice-store data only).
+If you instead want a private instance on a paid plan, the same table also works with the real
+store credentials added (`SHOPIFY_STORE_DOMAIN`, `SHOPIFY_ADMIN_TOKEN`, `SHOPIFY_CLIENT_ID`,
+`SHOPIFY_CLIENT_SECRET`, `CUSTOM_BASE_URL`, `CUSTOM_API_KEY`, `CUSTOM_CURRENCY` = `PKR`) — but
+never on a publicly shared URL.
