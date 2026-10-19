@@ -142,6 +142,98 @@ language and shop state.
 - Reorder recommendations from Bedrock trend prompts.
 - Multi-worker mode once horizontal scale is required (ADR-0005 notes the path).
 
+## Page 3 — "Additional info" (paste ready)
+
+- Submitter type: Individual · Organization: N/A · Country: Pakistan · Canada: N/A
+- Primary track: **Alexa+** · Repository: the GitHub URL · New project: **New**
+- AWS Builder mini-challenge: **Yes** (write-up below)
+- Open-source mini-challenge: **Yes** (write-up below) — repo is public with LICENSE, built inside the window
+
+### AWS Builder write-up
+
+Amazon Bedrock (Nova Lite via the Converse API) is the agent brain: it reads the MCP tool list,
+plans tool calls for briefings and drafts customer replies; Bedrock Guardrails adds a second
+filter layer behind our own injection filter. The same MCP endpoint ships as one container on
+ECS Fargate with the SQLite state volume on EFS (sessions, confirmations, audit log), the image
+lives in Amazon ECR (pushed by CI with a sha tag), CloudWatch collects the JSONL request/audit
+logs through the awslogs driver, and deploys use short-lived GitHub-Actions OIDC credentials —
+no long-lived keys. All integrations are code-visible in `deploy/`, `src/bedrock.ts`, and the
+AI eval suite in `test/`.
+
+### Open Source write-up
+
+Contribution URL: https://github.com/umar-akhtar-designer/storefront-voice-ops
+Project repo URL: https://github.com/umar-akhtar-designer/storefront-voice-ops
+GitHub username: umar-akhtar-designer
+A brand-new MIT-licensed repository built entirely inside the hackathon window: a complete
+MCP server for commerce (18 tools), the store-adapter package (Shopify, WooCommerce, custom
+PHP/MySQL, manual sellers), a browser voice simulator, 174 green tests, CI with secret
+scanning, ADRs, a friction log, and a PHP kit that connects any custom website. It matters
+because small Pakistani sellers — Shopify, Woo, custom-coded, or WhatsApp-only — get one
+open, auditable voice assistant for all of them.
+
+### Friction log URL
+
+https://github.com/umar-akhtar-designer/storefront-voice-ops/blob/main/docs/friction-log.md
+
+### Project testing link
+
+https://github.com/umar-akhtar-designer/storefront-voice-ops#readme (run `npm install && npm run dev` — Practice store works with zero setup; the video shows the live kapraa.pk connection)
+
+### Feature requests
+
+1. "MCP: first-class support for sending tool results in a dedicated role (or a helper that
+   wraps them as user messages)". Priority: Important. Matter-of-fact: every agent loop today
+   hand-rolls the mapping and gets it subtly wrong on retries.
+2. "Bedrock: one-click demo-grant (one model, one region, spend cap)". Priority: Nice-to-have.
+   It would take hackathon-style projects from account-creation to first response in minutes.
+
+### Feedback Q1
+
+TypeScript + Express + Zod + better-sqlite3 (app core), MCP SDK for the Alexa+ protocol,
+Amazon Bedrock Converse + Guardrails, WooCommerce REST v3, Shopify Admin GraphQL, Web Speech
+API browser input/output, Playwright + Vitest + GitHub Actions CI (gitleaks, npm audit), and a
+PHP + MySQL bridge for custom sites (live at kapraa.pk).
+
+### Feedback Q2
+
+Bedrock Converse: one call signature covering messages, tool definitions and results keeps the
+agent loop tiny; tool-choice "auto" worked first try. MCP SDK: sessions, transports and
+tool-registration just work on Streamable HTTP. WooCommerce REST v3: predictable and well
+documented. AWS OIDC-from-GitHub: no long-lived keys to leak. The AWS Voice/Bedrock eval
+boundary let us ship an offline fallback with zero code fork.
+
+### Feedback Q3
+
+Bedrock TypeScript types reject plain JSON-Schema tool inputs (one cast each time) and tool
+results must be re-sent as user-role messages (FL-008); model-access onboarding is still a
+multi-page flow; Guardrail availability varies by region and its ID wiring differs from the
+console flow. WooCommerce lacks fulfilment/tracking semantics, so we designed our own mapping
+(ADR-0002). MCP SDK doubling of session state vs horizontal scale needed an explicit design
+decision (ADR-0005).
+
+### Feedback Q4
+
+Bedrock: enabling Nova + Guardrails took a few console pages but the Converse hello-world is
+minutes. MCP SDK: best-in-class — the TypeScript quickstart ran untouched. Fargate+EFS: the
+pieces are documented separately; wiring them into one public URL was the slowest part.
+
+### Feedback Q5
+
+Yes. Bedrock because one API covers the whole assistant loop and a kill switch keeps demo
+cost bounded; Fargate/ECR/CloudWatch because a stateful MCP server is a normal container
+problem; WooCommerce and the MCP SDK because they behave exactly as documented.
+
+### AI tools used (survey)
+
+AI coding agent (Claude-based CLI) for scaffolding, review and test generation; AI image
+tool for the thumbnail. Core architecture, store integrations and all final code reviewed by a human.
+
+### Learning survey picks
+
+"Level of learning": the highest/detailed option offered ("A great deal — applied new tools
+end to end"). "AI value for your career": Yes.
+
 ## Optional pitch (if a short "how I built it" field exists)
 
 Single TypeScript service: Express serves the MCP Streamable HTTP endpoint, the simulator, and the
