@@ -46,12 +46,22 @@
         <div class="status">
           <span id="provider" class="pill"><i class="dot mint"></i>provider: …</span>
           <span id="engine" class="pill"><i class="dot indigo"></i>engine: …</span>
-          <select id="profile-select" class="pill profile-select" title="Switch store"
-                  aria-label="Active store">
+          <select
+            id="profile-select"
+            class="pill profile-select"
+            title="Switch store"
+            aria-label="Active store"
+          >
             <option value="">stores…</option>
           </select>
           <button id="add-store" class="ghost" title="Connect another store">+ Add store</button>
-          <button id="remove-store" class="ghost" title="Delete the store selected in the picker (the active one is safe)">🗑</button>
+          <button
+            id="remove-store"
+            class="ghost"
+            title="Delete the store selected in the picker (the active one is safe)"
+          >
+            🗑
+          </button>
           <button id="reset" class="ghost" hidden>↺ Reset demo</button>
         </div>
       </div>
@@ -110,7 +120,14 @@
             <input id="m-sku" placeholder="SKU (e.g. BLU-TSH-M)" required />
             <input id="m-name" placeholder="Product name" required />
             <input id="m-stock" type="number" min="0" placeholder="Stock" required />
-            <input id="m-price" type="number" min="0" step="0.01" placeholder="Price (PKR)" required />
+            <input
+              id="m-price"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Price (PKR)"
+              required
+            />
             <button type="submit">Add / update product</button>
           </form>
           <form id="manual-order-form" class="mini-form">
@@ -118,7 +135,13 @@
             <input id="o-phone" placeholder="Phone (optional)" />
             <input id="o-item-sku" placeholder="SKU from product list" required />
             <input id="o-qty" type="number" min="1" value="1" placeholder="Qty" required />
-            <input id="o-price" type="number" min="0" step="0.01" placeholder="Unit price (blank = product price)" />
+            <input
+              id="o-price"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Unit price (blank = product price)"
+            />
             <button type="submit">Record order</button>
           </form>
           <p class="pane-hint" id="manual-hint"></p>
@@ -203,6 +226,18 @@
             <button type="submit">Save store</button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <div id="confirm-dialog" class="dialog-backdrop" hidden>
+      <div class="dialog confirm-dialog" role="alertdialog" aria-modal="true">
+        <div class="confirm-icon" id="confirm-icon">!</div>
+        <h3 id="confirm-title">Delete store?</h3>
+        <p class="muted" id="confirm-message"></p>
+        <div class="dialog-actions">
+          <button type="button" id="confirm-cancel" class="ghost">Cancel</button>
+          <button type="button" id="confirm-approve" class="danger">Delete</button>
+        </div>
       </div>
     </div>
 

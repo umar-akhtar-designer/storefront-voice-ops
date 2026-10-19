@@ -406,11 +406,53 @@
     if (e.key === "Escape" && !addStoreDialog.hidden) addStoreDialog.hidden = true;
   });
 
+  /** A styled replacement for the browser's plain confirm() popup. */
+  function confirmBox(title, message, approveLabel) {
+    const dialog = document.getElementById("confirm-dialog");
+    document.getElementById("confirm-title").textContent = title;
+    document.getElementById("confirm-message").textContent = message;
+    document.getElementById("confirm-approve").textContent = approveLabel;
+    dialog.hidden = false;
+    return new Promise((resolve) => {
+      const done = (yes) => {
+        dialog.hidden = true;
+        cleanup();
+        resolve(yes);
+      };
+      const cancelBtn = document.getElementById("confirm-cancel");
+      const approveBtn = document.getElementById("confirm-approve");
+      const onBackdrop = (e) => {
+        if (e.target === dialog) done(false);
+      };
+      const onKey = (e) => {
+        if (e.key === "Escape" && !dialog.hidden) done(false);
+      };
+      function cleanup() {
+        cancelBtn.removeEventListener("click", onCancel);
+        approveBtn.removeEventListener("click", onApprove);
+        dialog.removeEventListener("click", onBackdrop);
+        window.removeEventListener("keydown", onKey);
+      }
+      const onCancel = () => done(false);
+      const onApprove = () => done(true);
+      cancelBtn.addEventListener("click", onCancel);
+      approveBtn.addEventListener("click", onApprove);
+      dialog.addEventListener("click", onBackdrop);
+      window.addEventListener("keydown", onKey);
+    });
+  }
+
   document.getElementById("remove-store").addEventListener("click", async () => {
     const id = Number(profileSelect.value);
-    const name = profileSelect.selectedOptions[0]?.textContent.replace(" ✓", "").trim() ?? "this store";
+    const name =
+      profileSelect.selectedOptions[0]?.textContent.replace(" ✓", "").trim() ?? "this store";
     if (!Number.isInteger(id)) return;
-    if (!confirm(`Delete “${name}”? Its connection details will be removed (your orders/products on the real store are never touched).`)) return;
+    const sure = await confirmBox(
+      `Delete “${name}”?`,
+      "Its connection details are removed from this app. Your orders and products on the real store are never touched.",
+      "Delete store",
+    );
+    if (!sure) return;
     try {
       const res = await fetch(`/api/profiles/${id}`, { method: "DELETE" });
       const data = await res.json();
@@ -468,8 +510,9 @@
       }
       addStoreDialog.hidden = true;
       addStoreForm.reset();
-      const suffix = data.reachable ? "" :
-        " (saved, but the store did not answer — check the credentials/local server)";
+      const suffix = data.reachable
+        ? ""
+        : " (saved, but the store did not answer — check the credentials/local server)";
       addMessage("assistant", `Connected “${data.profile.name}”.${suffix}`);
       speak(`Connected ${data.profile.name}`);
       let activated = false;
@@ -485,7 +528,8 @@
       }
       profileSelect.innerHTML = "";
       await Promise.all([refreshProfiles(), refreshState()]);
-      if (!activated) toast(`Saved. Tap the store picker to switch to ${data.profile.name}.`, "success");
+      if (!activated)
+        toast(`Saved. Tap the store picker to switch to ${data.profile.name}.`, "success");
     } catch {
       toast("Network error while saving the store.", "error");
     }
@@ -510,7 +554,10 @@
         toast(data.error || "Could not save the product.", "error");
         return;
       }
-      addMessage("assistant", `Saved product ${data.product.sku} — ${data.product.stock} in stock.`);
+      addMessage(
+        "assistant",
+        `Saved product ${data.product.sku} — ${data.product.stock} in stock.`,
+      );
       speak(`Saved ${data.product.name}`);
       e.target.reset();
       void refreshState();

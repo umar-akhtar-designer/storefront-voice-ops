@@ -824,7 +824,9 @@ code {
 .toast-out {
   opacity: 0;
   transform: translateY(8px);
-  transition: opacity 0.2s, transform 0.2s;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
 }
 @keyframes toast-in {
   from {
@@ -840,4 +842,43 @@ code {
 /* the [hidden] attribute must actually win over .dialog-backdrop's display */
 .dialog-backdrop[hidden] {
   display: none;
+}
+
+/* ---- Styled confirm dialog (replaces browser confirm popup) ---- */
+.confirm-dialog {
+  text-align: center;
+  padding-top: 24px;
+}
+.confirm-icon {
+  width: 46px;
+  height: 46px;
+  margin: 0 auto 10px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--danger);
+}
+.confirm-dialog h3 {
+  margin: 0 0 6px;
+}
+.confirm-dialog .muted {
+  color: #6b6890;
+  font-size: 0.86rem;
+  margin: 0 0 4px;
+}
+button.danger {
+  background: var(--danger);
+  border: none;
+  color: #fff;
+  padding: 9px 16px;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+button.danger:hover {
+  filter: brightness(1.1);
 }
