@@ -1,73 +1,87 @@
-# Demo video script (~3 minutes, speaker-ready)
+# Demo video script (5–7 minutes) — Storefront Voice Ops
 
-How to record: open the simulator at `http://localhost:3000` (`npm run dev`, `DEMO_MODE=1` in
-`.env`), fullscreen the browser, record 1080p with microphone on. Speak the "SAY" lines; do the
-"DO" actions. The dialog below is written to be spoken exactly as-is — keep the pace natural.
+Simple words. Short sentences. Talk to the camera like a friend.
 
-## Beat 0 — Hook (0:00–0:15)
+---
 
-- DO: fullscreen simulator; three panes visible.
-- SAY: "Meet Bilal — he sells clothes online from Karachi. Every evening his phone has forty
-  messages: 'where is my order?', 'did my parcel ship?'. Storefront Voice Ops is a voice assistant
-  for exactly this owner. In this demo it's the built-in Alexa+ flow — same MCP server, same tools."
+## 0. Before you record (5 minutes of setup)
 
-## Beat 1 — A quick hello (0:15–0:30)
+- Server running: terminal open at `storefront-voice-ops`, type `npm run dev`, keep it open
+- Browser: `http://localhost:3000`, allow **microphone**
+- **Kapraa.pk** selected in the store picker (top right shows `custom` + green dot)
+- Recording: Mac → press `Cmd + Shift + 5` → "Record Selected Portion" → pick the browser window
+- One page per scene — scroll slowly, click slowly. Judges hate fast hands.
 
-- DO: type `hello` → Send. (It replies with the help menu.)
-- SAY: "Simple hello first. The assistant tells the owner exactly what it can do — no guessing."
-- DO: click the **Low stock** example chip.
+---
 
-## Beat 2 — Low stock (0:30–0:55)
+## 1. THE PROBLEM (say this first) — ~1 min
 
-- DO: point the mouse at the reply; then point at the Store pane "Low stock" list.
-- SAY: "'What is running low?' — one tool call, and the Store pane updates live. Wool Scarf is
-  zero, Denim Jacket is two. And see this — the answer is spoken out loud, so he can cook and ask
-  at the same time." (let speechSynthesis read a couple of lines)
+> "Small sellers in Pakistan run their whole business from a WhatsApp group or Instagram DM —
+> there is no website, no system. Their orders live in chats, and they lose track of them.
+> Bigger sellers who DO have a store — Shopify or a custom-coded PHP website — still have to
+> click through admin panels all day just to ship one order.
+> I asked one question: what if the seller could just... TALK to their store?"
 
-## Beat 3 — Tap a card, ship an order (0:55–1:40)
+## 2. WHAT WE BUILT (the one-liner) — ~20 sec
 
-- DO: click the **Ship** chip on any order card (e.g. #1008).
-- SAY: "Now the dangerous part. 'Ship order 1008.' — notice the assistant does NOT act. It asks.
-  This is the safety line: every write needs a yes, and the pending action is stored in a database
-  with a time limit — it expires if he walks away."
-- DO: click the **Yes** chip on the "Awaiting confirmation" card.
-- SAY: "Confirm — order ships. Watch the audit log at the right: who did what, when. This is the
-  same gate a real Shopify store would have."
+> "This is Storefront Voice Ops — an Alexa-style voice and chat operator for your store.
+> You speak. The store obeys. Every write action is confirmed out loud and written to an
+> audit log — it acts like a careful human assistant, not a wild robot."
 
-## Beat 4 — It refuses (1:40–2:00)
+## 3. THE SOLUTION — show Kapraa LIVE (real store) — ~3 min
 
-- DO: click the order we just shipped (it is still on the list or type `Ship order …` for it), then
-  type `Cancel order …` → Send. If it's already shipped it refuses.
-- SAY: "And if he changes his mind after shipping? It refuses politely — a shipped order cannot be
-  cancelled by voice. That's the difference between a demo and something you trust with your shop."
+Do these on the LOCALHOST app, Kapraa.pk active:
 
-## Beat 5 — Order details (2:00–2:25)
+| #   | Say / click                                      | What the judge sees                                                                          |
+| --- | ------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| 1   | Type **"How did my store do today?"**            | Real kapraa sales summary (PKR)                                                              |
+| 2   | Say **"What is running low?"**                   | Real stock-out products (PRD-… SKUs)                                                         |
+| 3   | Say **"What orders are pending?"**               | Real kapraa customers (Daniyal, Sadaf…)                                                      |
+| 4   | Say **"Ship order <one real id> with Leopards"** | Confirmation card → "Yes" → shipped + audit entry (**use the Courier your dashboard shows**) |
+| 5   | Point to **Inspector panel**                     | "Every tool call + audit is visible — proof it really happened"                              |
 
-- DO: click **Details** on another order card (e.g. #1023).
-- SAY: "Customers also ask questions: 'where is my order?' — one tap and he has the items, the
-  price, the customer, the status. He can answer from memory, no app-switching."
-- DO: quickly show the supplier draft: click a **Restock** chip on a low-stock card.
-- SAY: "Even restocking — it drafts the supplier message ready for WhatsApp."
+Also say: "This is my REAL kapraa.pk store, connected through a tiny PHP file I wrote for it —
+no Shopify, no WooCommerce, just two endpoints in the API spec from the repo."
 
-## Beat 6 — The real AI + AWS (2:25–2:50)
+## 4. THE BEST PART (say this like it's the surprise) — ~1.5 min
 
-- DO: terminal: `USE_BEDROCK=1 npm run dev` (if model access exists) and ask today's briefing; or
-  show `npm run eval` passing 8/8 offline.
-- SAY: "Under the hood it talks to this MCP server over the real protocol. The brain is Amazon
-  Bedrock — today's briefing and drafted replies are rephrased by Nova. If Bedrock is off, it
-  degrades to fast deterministic answers — same data, zero downtime."
+> "And here is the part I am most proud of. This works with:
+>
+> - **Shopify** stores — dedicated adapter, name-search order lookup, inventory writes
+> - **WooCommerce** stores — standard REST keys, nothing special needed
+> - **Any custom-coded website** — even a PHP + MySQL site — using one JSON API file
+> - **Sellers with NO website at all** — WhatsApp, Facebook, Instagram sellers — they add
+>   products and record orders right here in the app, and voice manages shipping and stock
+>   exactly the same way
+>
+> And if you have many stores? One app runs all of them — pick a store here
+> (point at the picker), add a new one here (point at '+ Add store'), switch instantly.
+> Practice store included so judges can try everything safely."
 
-## Beat 7 — Close (2:50–3:10)
+## 5. SAFE BY DESIGN (quick words while scrolling the Inspector) — ~30 sec
 
-- DO: show README in the browser; stop on the repo link screen.
-- SAY: "The store layer is open source — Shopify and WooCommerce adapters behind one contract.
-  Built with Amazon Bedrock, MCP, and a lot of respect for the owner's trust. This is Storefront
-  Voice Ops for the Amazon Developers Hackathon — Alexa+ track."
+> "Voice can break a store. So: written actions always ask a Yes/No confirmation first,
+> everything is logged, rate-limited, and there is even a demo reset. Small changes to a
+> real store, instantly auditable."
 
-## Recording checklist
+## 6. END — ~20 sec
 
-- [ ] `npm run dev` running with `DEMO_MODE=1`; simulator fullscreen, close extra tabs
-- [ ] Mic toggle ON ("Speak replies aloud") for Beat 2 (speechSynthesis reads a reply)
-- [ ] Reset demo before recording (↺ Reset demo) so order 1008 is unshipped
-- [ ] Terminal for Beat 6 with `USE_BEDROCK=1` in a second tab (or `npm run eval` if no AWS)
-- [ ] One take ≤ 3:15; re-record if any long pause; upload to Devpost before 24 Oct 2026
+> "From a WhatsApp group to a Shopify giant — one voice assistant for every kind of store.
+> Code is open source on GitHub. Thank you."
+
+Hold last frame on the app for 5 seconds.
+
+---
+
+## Recording tips
+
+- Record in **one take per section** (Sections map to the table above) — restart just that scene when you stumble
+- Heavy **tab reload** (Cmd+Shift+R) before recording so no old toasts drip in
+- Never show Bazaar Box "can't connect" — keep Kapraa + Practice only (Bazaar Box comes back in the video later / on GitHub proof)
+- Keep the terminal LOG visible on the side once — judges love it
+- If the mic mishears, that's actually GOOD — type instead and say "same thing works by voice"
+
+## After recording
+
+1. Devpost form is ready: `docs/devpost-submission.md` — copy-paste section by section
+2. Submission needs: video link (YouTube unlisted, title = project name), repo link, dev log `STATUS.md`
